@@ -13,10 +13,10 @@ This is a Ved plugin that contains compiled modified versions of VVVVVV, and a h
 ## How do I use it?
 
 - Download a release on the sidebar
-- Extract the `.zip` file
-- Put the new folder in your plugins path
+- Put the downloaded `playtesting.zip` in your plugins path
 - Open Ved
 - Click yes when it asks if you want to download VVVVVV
+- Wait for it to tell you it's done
 - Playtesting should now work!
 
 ## How do I update VVVVVV?
@@ -25,7 +25,7 @@ Simply open Ved when there's a new verison of VVVVVV available, and it will ask 
 
 ## How do I update the plugin?
 
-This is a bit more manual -- you have to download the new release and replace the old folder with the new one.
+This is a bit more manual -- you have to download the new release and replace the old folder/`.zip` with the new one.
 
 ## Screenshots?
 
