@@ -383,7 +383,7 @@ function VLIB_LaunchGameInThread()
 
     VLIB_CHANNEL_IN:push({
         type = "set_base_path",
-        path = love.filesystem.getSaveDirectory() .. "/" .. VLIB_PLUGIN_PATH
+        path = love.filesystem.getSaveDirectory() .. "/env/"
     })
 
 
@@ -446,6 +446,36 @@ function VLIB_fetch(url, callback)
     VLIB_HTTPS.next_key = VLIB_HTTPS.next_key + 1
 end
 
+function VLIB_DownloadData(callback)
+    if love.filesystem.exists("env/data.zip") then
+        callback()
+    else
+        love.filesystem.createDirectory("env")
+        dialog.create(
+            "Download data.zip? This is required for VVVVVV to run.",
+            DBS.OKCANCEL,
+            function(button)
+                if button == DB.OK then
+                    VLIB_fetch("https://thelettervsixtim.es/makeandplay/data.zip", function(response)
+                        local success, message = love.filesystem.write("env/data.zip", response)
+                        if not success then
+                            love.window.showMessageBox("Error", "Failed to download data.zip -- " .. message, "error")
+                            return
+                        end
+                        dialog.create("data.zip has been downloaded.", DBS.OK,
+                            function()
+                                callback()
+                            end
+                        )
+                    end)
+                else
+                    dialog.create("Playtesting will not be available for this session.", DBS.OK)
+                end
+            end
+        )
+    end
+end
+
 function VLIB_CheckOrDownload(callback)
     local filename = VLIB_GetWantedLibraryName()
     -- Alright, is this in libs?
@@ -493,105 +523,190 @@ function VLIB_GetAction(callback)
     VLIB_fetch(VLIB_SETTINGS.base_vlib_url .. "runs?branch=vlib&status=success&per_page=20", function(response)
         local decoded = JSON.decode(response)
         local list = decoded.workflow_runs
+        local vlib_action = nil
+        local vlib_loc_action = nil
         for i = 1, #list do
-            if list[i].name == VLIB_SETTINGS.vlib_action then
-                callback(list[i])
-                return
+            if (not vlib_action) and list[i].name == VLIB_SETTINGS.vlib_action then
+                vlib_action = list[i]
+            end
+            if (not vlib_loc_action) and list[i].name == "CI-loc" then
+                vlib_loc_action = list[i]
             end
         end
-        callback(nil)
+        callback(vlib_action, vlib_loc_action)
     end)
 end
 
 function VLIB_Download(callback)
-    VLIB_GetAction(function (action)
+    VLIB_GetAction(function (action, loc_action)
         if not action then
             love.window.showMessageBox("Error", "Failed to download VVVVVV", "error")
             return
         end
 
-        VLIB_fetch(VLIB_SETTINGS.base_vlib_url .. "runs/" .. action.id .. "/artifacts", function(response)
-            -- Grabbing artifact information
-            local decoded = JSON.decode(response)
-            local list = decoded.artifacts
+        VLIB_DownloadLocalizationFiles(loc_action, function()
+            VLIB_DownloadLibrary(action, callback)
+        end)
+    end)
+end
 
-            local artifact = nil
-            local wanted_name = VLIB_GetWantedArtifactName()
-            for i = 1, #list do
-                local current_artifact = list[i]
-                if current_artifact.name == wanted_name then
-                    artifact = current_artifact
-                    break
-                end
-            end
-            if not artifact then
-                love.window.showMessageBox("Error", "Failed to download VVVVVV -- No artifact found for OS!", "error")
-                return
-            end
+function VLIB_DownloadLocalizationFiles(loc_action, callback)
+    local count = 0
+    local max_count = 2
 
-            -- ASSEMBLE A DOWNLOAD LINK!
-
-            local base_download_url = artifact.archive_download_url
-            -- Turn our returned download link into a nightly.link download link
+    VLIB_fetch(VLIB_SETTINGS.base_vlib_url .. "runs/" .. loc_action.id .. "/artifacts", function(response)
+        -- Grabbing artifact information
+        local decoded = JSON.decode(response)
+        local list = decoded.artifacts
+        max_count = #list
+        for i = 1, #list do
+            -- download both artifacts
+            local current_artifact = list[i]
+            local base_download_url = current_artifact.archive_download_url
             local download_url = string.gsub(base_download_url, "api.github.com/repos", "nightly.link")
             download_url = string.gsub(download_url, "/zip", ".zip")
 
-            -- Download the file
-            -- if temp doesn't exist, let's make it lol
+            cons("Downloading " .. current_artifact.name .. " folder from " .. download_url)
+
+            -- make the temp dir
             if not love.filesystem.exists(love.filesystem.getSaveDirectory() .. "/temp") then
                 love.filesystem.createDirectory("temp")
             end
 
-            local download_path = "/temp/" .. wanted_name .. ".zip"
-
-            cons("Downloading VVVVVV from " .. download_url)
+            local download_path = "/temp/" .. current_artifact.name .. ".zip"
 
             VLIB_fetch(download_url, function(response)
                 -- response should be a file!
                 local success, message = love.filesystem.write(download_path, response)
 
                 if not success then
-                    love.window.showMessageBox("Error", "Failed to download VVVVVV -- " .. message, "error")
+                    love.window.showMessageBox("Error", "Failed to download " .. current_artifact.name .. " folder -- " .. message, "error")
                     return
                 end
 
                 -- Mount the file we just downloaded
-                local success, message = love.filesystem.mount(download_path, "/temp/" .. wanted_name)
+                local success, message = love.filesystem.mount(download_path, "/temp/" .. current_artifact.name .. ".zip")
                 if not success then
                     love.window.showMessageBox("Error", "Failed to mount downloaded library -- " .. message, "error")
                     return
                 end
 
-                -- Copy the files from the mounted directory to Ved's save directory under "libs"
-                love.filesystem.createDirectory("libs")
+                -- Copy the files from the mounted directory to Ved's save directory under "env/name"
+                love.filesystem.createDirectory("env")
+                love.filesystem.createDirectory("env/" .. current_artifact.name)
 
-                local files = love.filesystem.getDirectoryItems("/temp/" .. wanted_name)
-                if #files ~= 1 then
-                    love.window.showMessageBox("Error", "Failed to copy downloaded library -- " .. "Expected 1 file, got " .. #files, "error")
-                    love.filesystem.unmount("/temp/" .. wanted_name)
-                    return
-                end
-
-                local file = files[1]
-                local success, message = love.filesystem.write("libs/" .. VLIB_GetWantedLibraryName(), love.filesystem.read("/temp/" .. wanted_name .. "/" .. file))
-
-                if not success then
-                    love.window.showMessageBox("Error", "Failed to copy downloaded library -- " .. message, "error")
-                    love.filesystem.unmount("/temp/" .. wanted_name)
-                    return
+                local files = love.filesystem.getDirectoryItems("/temp/" .. current_artifact.name)
+                for i = 1, #files do
+                    local file = files[i]
+                    local success, message = love.filesystem.write("env/" .. current_artifact.name .. "/" .. file, love.filesystem.read("/temp/" .. current_artifact.name .. "/" .. file))
+                    if not success then
+                        love.window.showMessageBox("Error", "Failed to copy downloaded library -- " .. message, "error")
+                        love.filesystem.unmount("/temp/" .. current_artifact.name .. ".zip")
+                        return
+                    end
                 end
 
                 -- Unmount the file
-                love.filesystem.unmount("/temp/" .. wanted_name)
+                love.filesystem.unmount("/temp/" .. current_artifact.name .. ".zip")
 
-                -- Save the settings
-                VLIB_Set("last_version", action.id)
-
-                -- Call the callback
-                if callback then
-                    callback()
+                count = count + 1
+                if count >= max_count then
+                    if callback then
+                        callback()
+                    end
                 end
             end)
+        end
+    end)
+end
+
+function VLIB_DownloadLibrary(action, callback)
+    VLIB_fetch(VLIB_SETTINGS.base_vlib_url .. "runs/" .. action.id .. "/artifacts", function(response)
+        -- Grabbing artifact information
+        local decoded = JSON.decode(response)
+        local list = decoded.artifacts
+
+        local artifact = nil
+        local wanted_name = VLIB_GetWantedArtifactName()
+        for i = 1, #list do
+            local current_artifact = list[i]
+            if current_artifact.name == wanted_name then
+                artifact = current_artifact
+                break
+            end
+        end
+        if not artifact then
+            love.window.showMessageBox("Error", "Failed to download VVVVVV -- No artifact found for OS!", "error")
+            return
+        end
+
+        -- ASSEMBLE A DOWNLOAD LINK!
+
+        local base_download_url = artifact.archive_download_url
+        -- Turn our returned download link into a nightly.link download link
+        local download_url = string.gsub(base_download_url, "api.github.com/repos", "nightly.link")
+        download_url = string.gsub(download_url, "/zip", ".zip")
+
+        -- Download the file
+        -- if temp doesn't exist, let's make it lol
+        if not love.filesystem.exists(love.filesystem.getSaveDirectory() .. "/temp") then
+            love.filesystem.createDirectory("temp")
+        end
+
+        local download_path = "/temp/" .. wanted_name .. ".zip"
+
+        cons("Downloading VVVVVV from " .. download_url)
+
+        VLIB_fetch(download_url, function(response)
+            -- response should be a file!
+            local success, message = love.filesystem.write(download_path, response)
+
+            if not success then
+                love.window.showMessageBox("Error", "Failed to download VVVVVV -- " .. message, "error")
+                return
+            end
+
+            -- Mount the file we just downloaded
+            local success, message = love.filesystem.mount(download_path, "/temp/" .. wanted_name)
+            if not success then
+                love.window.showMessageBox("Error", "Failed to mount downloaded library -- " .. message, "error")
+                return
+            end
+
+            -- Copy the files from the mounted directory to Ved's save directory under "libs"
+            love.filesystem.createDirectory("libs")
+
+            local files = love.filesystem.getDirectoryItems("/temp/" .. wanted_name)
+            if #files ~= 1 then
+                love.window.showMessageBox("Error", "Failed to copy downloaded library -- " .. "Expected 1 file, got " .. #files, "error")
+                love.filesystem.unmount("/temp/" .. wanted_name)
+                return
+            end
+
+            local file = files[1]
+            local success, message = love.filesystem.write("libs/" .. VLIB_GetWantedLibraryName(), love.filesystem.read("/temp/" .. wanted_name .. "/" .. file))
+
+            if not success then
+                love.window.showMessageBox("Error", "Failed to copy downloaded library -- " .. message, "error")
+                love.filesystem.unmount("/temp/" .. wanted_name)
+                return
+            end
+
+            -- Unmount the file
+            love.filesystem.unmount("/temp/" .. wanted_name)
+
+            -- Save the settings
+            VLIB_Set("last_version", action.id)
+
+            dialog.create(
+                "VVVVVV has been downloaded.",
+                DBS.OK,
+                function()
+                    if callback then
+                        callback()
+                    end
+                end
+            )
         end)
     end)
 end
