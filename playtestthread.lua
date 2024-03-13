@@ -172,10 +172,10 @@ while true do
         v_lib.mainLoop(#args + 1, ffi.cast("char**", argv))
         started = true
     elseif data.type == "settings" then
-        vvvvvv_settings = data.settings
-        v_lib.set_invincibility(data.settings.invincibility)
-        v_lib.set_volume(data.settings.music_volume)
-        v_lib.set_sound_volume(data.settings.sfx_volume)
+        vvvvvv_settings = data
+        v_lib.set_invincibility(data.invincibility)
+        v_lib.set_volume(data.music_volume)
+        v_lib.set_sound_volume(data.sfx_volume)
     elseif data.type == "stop" then
         v_lib.return_to_idlemode()
     elseif data.type == "imagedata" then

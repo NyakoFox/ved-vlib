@@ -319,10 +319,9 @@ function VLIB_SaveSettings()
         cons("Error saving settings: " .. message)
     end
     if VLIB_READY then
-        VLIB_CHANNEL_IN:push({
-            type = "settings",
-            settings = VLIB_SETTINGS
-        })
+        VLIB_SETTINGS.type = "settings"
+        VLIB_CHANNEL_IN:push(VLIB_SETTINGS)
+        VLIB_SETTINGS.type = nil
     end
 end
 
@@ -376,10 +375,9 @@ function VLIB_LaunchGameInThread()
     VLIB_CHANNEL_OUT_SIGNAL = love.thread.getChannel("vlib_out_signal")
     VLIB_CHANNEL_OUT_DRAW = love.thread.getChannel("vlib_out_draw")
 
-    VLIB_CHANNEL_IN:push({
-        type = "settings",
-        settings = VLIB_SETTINGS
-    })
+    VLIB_SETTINGS.type = "settings"
+    VLIB_CHANNEL_IN:push(VLIB_SETTINGS)
+    VLIB_SETTINGS.type = nil
 
     VLIB_CHANNEL_IN:push({
         type = "set_base_path",

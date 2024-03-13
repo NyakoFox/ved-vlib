@@ -13,7 +13,7 @@ function VLIB_Slider(x, y, label, width, current, max, on_change)
     if (love.mouse.isDown("l")) then
         local mx, my = love.mouse.getPosition()
         if (mx > x and mx < x + width and my > y + 16 and my < y + 24) then
-            local new = (mx - x) / width * max
+            local new = round((mx - x) / width * max)
             on_change(new)
         end
     end
