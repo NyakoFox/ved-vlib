@@ -454,8 +454,11 @@ function VLIB_DownloadData(callback)
             DBS.OKCANCEL,
             function(button)
                 if button == DB.OK then
+                    VLIB_DOWNLOADING = true
+                    VLIB_DOWNLOAD_TYPE = "data.zip"
                     VLIB_fetch("https://thelettervsixtim.es/makeandplay/data.zip", function(response)
                         local success, message = love.filesystem.write("env/data.zip", response)
+                        VLIB_DOWNLOADING = false
                         if not success then
                             love.window.showMessageBox("Error", "Failed to download data.zip -- " .. message, "error")
                             return
@@ -552,18 +555,27 @@ function VLIB_DownloadLocalizationFiles(loc_action, callback)
     local count = 0
     local max_count = 2
 
+    VLIB_DOWNLOADING = true
+    VLIB_DOWNLOAD_TYPE = "localization files"
+
     VLIB_fetch(VLIB_SETTINGS.base_vlib_url .. "runs/" .. loc_action.id .. "/artifacts", function(response)
         -- Grabbing artifact information
         local decoded = JSON.decode(response)
         local list = decoded.artifacts
         max_count = #list
+        local failed = false
         for i = 1, #list do
+            if failed then
+                VLIB_DOWNLOADING = false
+                break
+            end
             -- download both artifacts
             local current_artifact = list[i]
             local base_download_url = current_artifact.archive_download_url
             local download_url = string.gsub(base_download_url, "api.github.com/repos", "nightly.link")
             download_url = string.gsub(download_url, "/zip", ".zip")
 
+            VLIB_DOWNLOAD_TYPE = current_artifact.name .. " folder"
             cons("Downloading " .. current_artifact.name .. " folder from " .. download_url)
 
             -- make the temp dir
@@ -578,6 +590,7 @@ function VLIB_DownloadLocalizationFiles(loc_action, callback)
                 local success, message = love.filesystem.write(download_path, response)
 
                 if not success then
+                    failed = true
                     love.window.showMessageBox("Error", "Failed to download " .. current_artifact.name .. " folder -- " .. message, "error")
                     return
                 end
@@ -585,6 +598,7 @@ function VLIB_DownloadLocalizationFiles(loc_action, callback)
                 -- Mount the file we just downloaded
                 local success, message = love.filesystem.mount(download_path, "/temp/" .. current_artifact.name .. ".zip")
                 if not success then
+                    failed = true
                     love.window.showMessageBox("Error", "Failed to mount downloaded library -- " .. message, "error")
                     return
                 end
@@ -600,6 +614,7 @@ function VLIB_DownloadLocalizationFiles(loc_action, callback)
                     if not success then
                         love.window.showMessageBox("Error", "Failed to copy downloaded library -- " .. message, "error")
                         love.filesystem.unmount("/temp/" .. current_artifact.name .. ".zip")
+                        failed = true
                         return
                     end
                 end
@@ -619,6 +634,8 @@ function VLIB_DownloadLocalizationFiles(loc_action, callback)
 end
 
 function VLIB_DownloadLibrary(action, callback)
+    VLIB_DOWNLOADING = true
+    VLIB_DOWNLOAD_TYPE = "VVVVVV"
     VLIB_fetch(VLIB_SETTINGS.base_vlib_url .. "runs/" .. action.id .. "/artifacts", function(response)
         -- Grabbing artifact information
         local decoded = JSON.decode(response)
@@ -635,6 +652,7 @@ function VLIB_DownloadLibrary(action, callback)
         end
         if not artifact then
             love.window.showMessageBox("Error", "Failed to download VVVVVV -- No artifact found for OS!", "error")
+            VLIB_DOWNLOADING = false
             return
         end
 
@@ -661,6 +679,7 @@ function VLIB_DownloadLibrary(action, callback)
 
             if not success then
                 love.window.showMessageBox("Error", "Failed to download VVVVVV -- " .. message, "error")
+                VLIB_DOWNLOADING = false
                 return
             end
 
@@ -668,6 +687,7 @@ function VLIB_DownloadLibrary(action, callback)
             local success, message = love.filesystem.mount(download_path, "/temp/" .. wanted_name)
             if not success then
                 love.window.showMessageBox("Error", "Failed to mount downloaded library -- " .. message, "error")
+                VLIB_DOWNLOADING = false
                 return
             end
 
@@ -678,6 +698,7 @@ function VLIB_DownloadLibrary(action, callback)
             if #files ~= 1 then
                 love.window.showMessageBox("Error", "Failed to copy downloaded library -- " .. "Expected 1 file, got " .. #files, "error")
                 love.filesystem.unmount("/temp/" .. wanted_name)
+                VLIB_DOWNLOADING = false
                 return
             end
 
@@ -687,6 +708,7 @@ function VLIB_DownloadLibrary(action, callback)
             if not success then
                 love.window.showMessageBox("Error", "Failed to copy downloaded library -- " .. message, "error")
                 love.filesystem.unmount("/temp/" .. wanted_name)
+                VLIB_DOWNLOADING = false
                 return
             end
 
@@ -695,6 +717,8 @@ function VLIB_DownloadLibrary(action, callback)
 
             -- Save the settings
             VLIB_Set("last_version", action.id)
+
+            VLIB_DOWNLOADING = false
 
             dialog.create(
                 "VVVVVV has been downloaded.",

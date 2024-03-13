@@ -9,7 +9,7 @@ require("love.filesystem")
 require("love.system")
 
 local ffi = require("ffi")
-require(pluginpath .. "utils")
+require(pluginpath:gsub("/", ".") .. "utils")
 
 local name
 

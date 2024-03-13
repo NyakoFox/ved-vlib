@@ -6,6 +6,9 @@ VLIB_ACCUMULATOR = 0
 
 VLIB_READY = false
 
+VLIB_DOWNLOADING = false
+VLIB_DOWNLOAD_TYPE = "file"
+
 VLIB_FLAGS = {}
 for i = 1, 100 do
     VLIB_FLAGS[i] = false
@@ -20,6 +23,7 @@ VLIB_DownloadData(function()
         VLIB_LaunchGameInThread()
     else
         VLIB_CheckOrDownload(function()
+            VLIB_DOWNLOADING = false
             VLIB_LaunchGameInThread()
         end)
     end
