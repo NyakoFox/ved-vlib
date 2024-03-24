@@ -320,8 +320,10 @@ function VLIB_SaveSettings()
     end
     if VLIB_READY then
         VLIB_SETTINGS.type = "settings"
+        VLIB_SETTINGS.ved_translucent_bg = not s.opaqueroomnamebackground
         VLIB_CHANNEL_IN:push(VLIB_SETTINGS)
         VLIB_SETTINGS.type = nil
+        VLIB_SETTINGS.ved_translucent_bg = nil
     end
 end
 
@@ -338,7 +340,8 @@ function VLIB_InitializeSettings()
         translucent_bg = nil,
         last_version = nil,
         base_vlib_url = "https://api.github.com/repos/NyakoFox/VVVVVV/actions/",
-        vlib_action = "CI"
+        vlib_action = "CI",
+        show_ghosts = false
     }
 
     local settings_path = VLIB_PLUGIN_PATH .. "settings.json"

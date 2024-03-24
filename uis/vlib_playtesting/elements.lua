@@ -9,8 +9,6 @@ return {
             els_top = {
                 Text("Options"),
 
-                LabelButtonSpacer(),
-
                 DrawingFunction(
                     function(x, y, maxw, maxh)
                         ved_printf("FPS Target", x, y, maxw, "center")
@@ -66,7 +64,35 @@ return {
                         end)
                         return math.max(w, w2), h + h2
                     end
-                )
+                ),
+
+                DrawingFunction(
+                    function(x, y, maxw, maxh)
+                        checkbox(VLIB_SETTINGS.show_ghosts, x, y, nil, "Show ghosts", function()
+                            VLIB_Set("show_ghosts", not VLIB_SETTINGS.show_ghosts)
+                        end)
+                        return 8 + 32 + font_ui:getWidth("Show ghosts"), 16
+                    end
+                ),
+
+                DrawingFunction(
+                    function(x, y, maxw, maxh)
+                        ved_printf("Translucent\nroom name", x, y, maxw, "center")
+                        for k,v in pairs({
+                            {nil, "Synced"},
+                            {true, "Translucent"},
+                            {false, "Opaque"},
+                        }) do
+                            radio_wrap(VLIB_SETTINGS.translucent_bg == v[1], x, y+(24*k)-4, v[1], v[2], 96,
+                                function(key)
+                                    VLIB_Set("translucent_bg", v[1])
+                                end
+                            )
+                        end
+                        return 112, 20+24*3
+                    end
+                ),
+
                 --LabelButton("a"),
                 --LabelButton("b"),
                 --LabelButton("c"),

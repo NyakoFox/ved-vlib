@@ -9,10 +9,14 @@ VLIB_READY = false
 VLIB_DOWNLOADING = false
 VLIB_DOWNLOAD_TYPE = "file"
 
+VLIB_GHOSTS = {}
+
 VLIB_FLAGS = {}
 for i = 1, 100 do
     VLIB_FLAGS[i] = false
 end
+
+VLIB_GHOST_CANVAS = love.graphics.newCanvas(320, 240)
 
 VLIB_InitializeSettings()
 

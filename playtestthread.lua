@@ -111,6 +111,20 @@ ffi.cdef([[
     } draw_message;
 
     draw_message pop_draw_messages(void);
+
+    typedef struct
+    {
+        int rx; // game.roomx-100
+        int ry; // game.roomy-100
+        int x; // .xp
+        int y; // .yp
+        int col; // .colour
+        color realcol;
+        int frame; // .drawframe
+    } GhostInfo;
+
+    int get_ghost_count(void);
+    GhostInfo get_ghost_info(int index);
 ]])
 
 local vvvvvv_state = "IDLEMODE"
@@ -176,6 +190,12 @@ while true do
         v_lib.set_invincibility(data.invincibility)
         v_lib.set_volume(data.music_volume)
         v_lib.set_sound_volume(data.sfx_volume)
+
+        if (vvvvvv_settings.translucent_bg == nil) then
+            v_lib.set_roomname_bg(data.ved_translucent_bg)
+        else
+            v_lib.set_roomname_bg(vvvvvv_settings.translucent_bg)
+        end
     elseif data.type == "stop" then
         v_lib.return_to_idlemode()
     elseif data.type == "imagedata" then
@@ -275,6 +295,27 @@ while true do
             v_lib.simulate_mouseevent("mouseup", mouse_to_id[data.button], data.x, data.y)
         elseif data.state == "moved" then
             v_lib.simulate_mousemoveevent(data.x, data.y)
+        end
+    elseif data.type == "ghostinfo" then
+        local count = v_lib.get_ghost_count()
+        for i = 1, count do
+            local info = v_lib.get_ghost_info(i - 1)
+            channel_out:push({
+                type = "ghostinfo",
+                index = i,
+                rx = info.rx,
+                ry = info.ry,
+                x = info.x,
+                y = info.y,
+                col = info.col,
+                realcol = {
+                    r = info.realcol.r,
+                    g = info.realcol.g,
+                    b = info.realcol.b,
+                    a = info.realcol.a
+                },
+                frame = info.frame
+            })
         end
     end
 end

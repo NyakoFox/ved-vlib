@@ -24,6 +24,10 @@ if VLIB_READY then
                 playtesting_uistate = PT_UISTATE.OFF
                 tostate(1, true)
                 love.mouse.setVisible(true)
+                VLIB_GHOSTS = {}
+                VLIB_CHANNEL_IN:push({
+                    type = "ghostinfo"
+                })
             end
         elseif message.type == "flag" then
             VLIB_FLAGS[message.flag] = message.value
@@ -32,6 +36,26 @@ if VLIB_READY then
             playtesting_uistate = PT_UISTATE.OFF
             tostate(1, true)
             love.mouse.setVisible(true)
+
+            VLIB_GHOSTS = {}
+            VLIB_CHANNEL_IN:push({
+                type = "ghostinfo"
+            })
+        elseif message.type == "ghostinfo" then
+            VLIB_GHOSTS[message.index] = {
+                rx = message.rx,
+                ry = message.ry,
+                x = message.x,
+                y = message.y,
+                col = message.col,
+                realcol = {
+                    r = message.realcol.r,
+                    g = message.realcol.g,
+                    b = message.realcol.b,
+                    a = message.realcol.a
+                },
+                frame = message.frame
+            }
         end
     end
 end
