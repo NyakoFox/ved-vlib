@@ -461,7 +461,7 @@ function VLIB_DownloadData(callback)
                         local success, message = love.filesystem.write("env/data.zip", response)
                         VLIB_DOWNLOADING = false
                         if not success then
-                            love.window.showMessageBox("Error", "Failed to download data.zip -- " .. message, "error")
+                            dialog.create("Failed to download data.zip -- " .. message, DBS.OK)
                             return
                         end
                         dialog.create("data.zip has been downloaded.", DBS.OK,

@@ -2,17 +2,16 @@ local dt = ...
 
 if VLIB_READY then
     -- deltaloop
-    VLIB_ACCUMULATOR = VLIB_ACCUMULATOR + dt
-    local should_update = false
-    while VLIB_ACCUMULATOR >= (VLIB_SETTINGS.game_speed / 1000) do
-        should_update = true
-        VLIB_ACCUMULATOR = VLIB_ACCUMULATOR - (VLIB_SETTINGS.game_speed / 1000)
-    end
 
-    if should_update then
-        VLIB_CHANNEL_IN:push({
-            type = "update"
-        })
+    if not (s.pausedrawunfocused and not window_active()) then
+        VLIB_ACCUMULATOR = VLIB_ACCUMULATOR + dt
+        while VLIB_ACCUMULATOR >= (VLIB_SETTINGS.game_speed / 1000) do
+            VLIB_ACCUMULATOR = VLIB_ACCUMULATOR - (VLIB_SETTINGS.game_speed / 1000)
+
+            VLIB_CHANNEL_IN:push({
+                type = "update"
+            })
+        end
     end
 
     while VLIB_CHANNEL_OUT:getCount() > 0 do
