@@ -191,11 +191,16 @@ while true do
         v_lib.set_volume(data.music_volume)
         v_lib.set_sound_volume(data.sfx_volume)
 
+        local translucent_bg
         if (vvvvvv_settings.translucent_bg == nil) then
-            v_lib.set_roomname_bg(data.ved_translucent_bg)
+            translucent_bg = data.ved_translucent_bg
         else
-            v_lib.set_roomname_bg(vvvvvv_settings.translucent_bg)
+            translucent_bg = vvvvvv_settings.translucent_bg
         end
+        if translucent_bg == nil then
+            translucent_bg = false
+        end
+        v_lib.set_roomname_bg(translucent_bg)
     elseif data.type == "stop" then
         v_lib.return_to_idlemode()
     elseif data.type == "imagedata" then
