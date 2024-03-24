@@ -4,9 +4,9 @@ if VLIB_READY then
     -- deltaloop
     VLIB_ACCUMULATOR = VLIB_ACCUMULATOR + dt
     local should_update = false
-    while VLIB_ACCUMULATOR >= (1 / 29.4117647) do
+    while VLIB_ACCUMULATOR >= (VLIB_SETTINGS.game_speed / 1000) do
         should_update = true
-        VLIB_ACCUMULATOR = VLIB_ACCUMULATOR - (1 / 29.4117647)
+        VLIB_ACCUMULATOR = VLIB_ACCUMULATOR - (VLIB_SETTINGS.game_speed / 1000)
     end
 
     if should_update then

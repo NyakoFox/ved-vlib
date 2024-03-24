@@ -129,7 +129,7 @@ local DRAW_SET_TINT_ALPHA = 11
 function VLIB_DrawGame()
     VLIB_CHANNEL_IN:push({
         type = "delta",
-        delta = VLIB_SETTINGS.over30 and (VLIB_ACCUMULATOR / (1 / 29.4117647)) or 1
+        delta = VLIB_SETTINGS.over30 and (VLIB_ACCUMULATOR / (VLIB_SETTINGS.game_speed / 1000)) or 1
     })
 
     -- wait until vvvvvv_channel_out_signal has a message saying its fine to render
@@ -332,6 +332,7 @@ function VLIB_InitializeSettings()
         path = nil,
         invincibility = false,
         over30 = true,
+        game_speed = 34,
         music_volume = 256,
         sfx_volume = 256,
         translucent_bg = nil,

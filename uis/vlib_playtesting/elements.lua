@@ -30,6 +30,25 @@ return {
 
                 DrawingFunction(
                     function(x, y, maxw, maxh)
+                        ved_printf("Game speed", x, y, maxw, "center")
+                        for k,v in pairs({
+                            {34, "100%"},
+                            {41, "80%"},
+                            {55, "60%"},
+                            {83, "40%"}
+                        }) do
+                            radio_wrap(VLIB_SETTINGS.game_speed == v[1], x, y+(24*k)-4, v[1], v[2], 96,
+                                function(key)
+                                    VLIB_Set("game_speed", v[1])
+                                end
+                            )
+                        end
+                        return 112, 20+24*4
+                    end
+                ),
+
+                DrawingFunction(
+                    function(x, y, maxw, maxh)
                         checkbox(VLIB_SETTINGS.invincibility, x, y, nil, "Invincible", function()
                             VLIB_Set("invincibility", not VLIB_SETTINGS.invincibility)
                         end)
