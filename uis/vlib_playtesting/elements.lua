@@ -106,6 +106,29 @@ return {
         {
         },
         {
+            DrawingFunction(
+                function(x, y, maxw, maxh)
+                    font_ui:print("Flags", x, y)
+                    local num_x = 0
+                    local num_y = 0
+
+                    for i = 1, 100 do
+                        local flag = i - 1
+                        local label = ((flag < 10) and "0" or "") .. flag
+
+                        if num_y > 9 then
+                            num_x = num_x + 1
+                            num_y = 0
+                        end
+
+                        love.graphics.setColor(VLIB_FLAGS[i] and {255, 255, 255, 255} or {128, 128, 128, 255})
+                        tinyfont:print(label, x + num_x * 12, y + 16 + num_y * 8)
+                        num_y = num_y + 1
+                    end
+
+                    return 12 * 10 - 4, 10 * 8 + 16
+                end
+            ),
             LabelButton("Flags", function()
                 VLIB_CHANNEL_IN:push({
                     type = "clear_input"

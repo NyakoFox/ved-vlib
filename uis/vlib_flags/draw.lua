@@ -15,7 +15,7 @@ return function()
         local x = 10
         local y = 10
         for i = 1, 100 do
-            local label = "[" .. i .. "] " .. vedmetadata.flaglabel[i - 1]
+            local label = "[" .. i - 1 .. "] " .. vedmetadata.flaglabel[i - 1]
             local width = font_ui:getWidth(label)
             if width > longest_label then
                 longest_label = width
