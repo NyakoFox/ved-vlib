@@ -11,7 +11,7 @@ return {
 
                 DrawingFunction(
                     function(x, y, maxw, maxh)
-                        ved_printf("FPS Target", x, y, maxw, "center")
+                        font_ui:printf("FPS Target", x, y, maxw, "center")
                         for k,v in pairs({
                             {false, "30 FPS"},
                             {true, "30+ FPS"}
@@ -28,7 +28,7 @@ return {
 
                 DrawingFunction(
                     function(x, y, maxw, maxh)
-                        ved_printf("Game speed", x, y, maxw, "center")
+                        font_ui:printf("Game speed", x, y, maxw, "center")
                         for k,v in pairs({
                             {34, "100%"},
                             {41, "80%"},
@@ -77,7 +77,7 @@ return {
 
                 DrawingFunction(
                     function(x, y, maxw, maxh)
-                        ved_printf("Translucent\nroom name", x, y, maxw, "center")
+                        font_ui:printf("Translucent\nroom name", x, y, maxw, "center")
                         for k,v in pairs({
                             {nil, "Synced"},
                             {true, "Translucent"},
@@ -98,12 +98,6 @@ return {
                 --LabelButton("c"),
             },
             els_bot = {
-                LabelButton("Flags", function()
-                    VLIB_CHANNEL_IN:push({
-                        type = "clear_input"
-                    })
-                    to_astate("vlib_flags")
-                end),
             }
         },
         ALIGN.LEFT
@@ -112,7 +106,12 @@ return {
         {
         },
         {
-            LabelButtonSpacer(),
+            LabelButton("Flags", function()
+                VLIB_CHANNEL_IN:push({
+                    type = "clear_input"
+                })
+                to_astate("vlib_flags")
+            end),
             LabelButton(L.RETURN, function()
                 VLIB_CHANNEL_IN:push({
                     type = "stop"

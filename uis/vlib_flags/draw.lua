@@ -46,5 +46,8 @@ return function()
                 mousepressed = true
             end
         end
+    else
+        font_ui:printf("No metadata found", 0, 32, 896, "center")
+        font_ui:printf("Please name a flag before using this feature", 0, 48, 896, "center")
     end
 end
