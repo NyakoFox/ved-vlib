@@ -53,6 +53,12 @@ end
 function VLIB_SetupCanvases()
     VLIB_canvas_main = love.graphics.newCanvas(320, 240)
 
+    VLIB_tinted_canvases = {
+        tilesTintTexture = true,
+        tiles2TintTexture = true,
+        entcoloursTintTexture = true
+    }
+
     VLIB_canvases = {
         gameTexture = love.graphics.newCanvas(320, 240),
         gameplayTexture = love.graphics.newCanvas(320, 240),
@@ -68,10 +74,13 @@ function VLIB_SetupCanvases()
         spritesTexture = tilesets["sprites.png"].white_img,
         tilesTexture = tilesets["tiles.png"].img,
         tilesWhiteTexture = tilesets["tiles.png"].white_img,
+        tilesTintTexture = tilesets["tiles.png"].img,
         tiles2Texture = tilesets["tiles2.png"].img,
+        tiles2TintTexture = tilesets["tiles2.png"].img,
         tiles3Texture = tilesets["tiles3.png"].img,
         teleporterTexture = tilesets["teleporter.png"].white_img,
         entcoloursTexture = tilesets["entcolours.png"].img,
+        entcoloursTintTexture = tilesets["entcolours.png"].img,
         image0Texture = tilesets["levelcomplete.png"].img,
         image1Texture = tilesets["minimap.png"].img,
         image2Texture = tilesets["covered.png"].img,
@@ -214,6 +223,7 @@ function VLIB_DrawGame()
         elseif message.type == DRAW_TEXTURE then
             -- uses src and dest. src is the rectangle of the texture to draw, dest is the rectangle to draw it to
             local texture = VLIB_GetTexture(message.texture)
+            local grayscale = VLIB_tinted_canvases[message.texture]
 
             local texture_width = texture:getWidth()
             local texture_height = texture:getHeight()
@@ -250,11 +260,20 @@ function VLIB_DrawGame()
 
             local old_r, old_g, old_b, old_a = love.graphics.getColor()
             love.graphics.setColor(VLIB_texture_colors[message.texture] or {255, 255, 255, 255})
+
+            if grayscale and shader_tint then
+                love.graphics.setShader(shader_tint)
+            end
             love.graphics.draw(texture, quad, dest.x, dest.y, 0, scale_x, scale_y)
+            if grayscale and shader_tint then
+                love.graphics.setShader()
+            end
+
             love.graphics.setColor(old_r, old_g, old_b, old_a)
         elseif message.type == DRAW_TEXTURE_EXT then
             -- optional angle, center point and flip parameters
             local texture = VLIB_GetTexture(message.texture)
+            local grayscale = VLIB_tinted_canvases[message.texture]
 
             local texture_width = texture:getWidth()
             local texture_height = texture:getHeight()
@@ -296,7 +315,13 @@ function VLIB_DrawGame()
 
             local old_r, old_g, old_b, old_a = love.graphics.getColor()
             love.graphics.setColor(VLIB_texture_colors[message.texture] or {255, 255, 255, 255})
+            if grayscale and shader_tint then
+                love.graphics.setShader(shader_tint)
+            end
             love.graphics.draw(texture, quad, dest.x, dest.y, angle, scale_x * flip_x, scale_y * flip_y, center.x, center.y)
+            if grayscale and shader_tint then
+                love.graphics.setShader()
+            end
             love.graphics.setColor(old_r, old_g, old_b, old_a)
         end
     end
