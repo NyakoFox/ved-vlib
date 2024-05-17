@@ -339,7 +339,7 @@ function VLIB_Set(option, value)
 end
 
 function VLIB_SaveSettings()
-    local success, message = pcall(love.filesystem.write, VLIB_PLUGIN_PATH .. "settings.json", JSON.encode(VLIB_SETTINGS))
+    local success, message = pcall(love.filesystem.write, "/vlib-settings.json", JSON.encode(VLIB_SETTINGS))
     if not success then
         cons("Error saving settings: " .. message)
     end
@@ -369,7 +369,7 @@ function VLIB_InitializeSettings()
         show_ghosts = false
     }
 
-    local settings_path = VLIB_PLUGIN_PATH .. "settings.json"
+    local settings_path = "/vlib-settings.json"
     if love.filesystem.exists(settings_path) then
         VLIB_SETTINGS = VLIB_Merge(VLIB_SETTINGS, JSON.decode(love.filesystem.read(settings_path)))
     end
@@ -625,7 +625,7 @@ function VLIB_DownloadLocalizationFiles(loc_action, callback)
                 end
 
                 -- Mount the file we just downloaded
-                local success, message = love.filesystem.mount(download_path, "/temp/" .. current_artifact.name .. ".zip")
+                local success, message = love.filesystem.mount(download_path, "/temp/" .. current_artifact.name)
                 if not success then
                     failed = true
                     love.window.showMessageBox("Error", "Failed to mount downloaded library -- " .. message, "error")
@@ -639,12 +639,25 @@ function VLIB_DownloadLocalizationFiles(loc_action, callback)
                 local files = love.filesystem.getDirectoryItems("/temp/" .. current_artifact.name)
                 for i = 1, #files do
                     local file = files[i]
-                    local success, message = love.filesystem.write("env/" .. current_artifact.name .. "/" .. file, love.filesystem.read("/temp/" .. current_artifact.name .. "/" .. file))
-                    if not success then
-                        love.window.showMessageBox("Error", "Failed to copy downloaded library -- " .. message, "error")
-                        love.filesystem.unmount("/temp/" .. current_artifact.name .. ".zip")
-                        failed = true
-                        return
+                    -- FIRST: check if its a directory
+                    if love.filesystem.isDirectory("/temp/" .. current_artifact.name .. "/" .. file) then
+                        -- great, make it
+                        love.filesystem.createDirectory("env/" .. current_artifact.name .. "/" .. file)
+                    else
+                        local contents, size = love.filesystem.read("/temp/" .. current_artifact.name .. "/" .. file)
+                        if contents == nil then
+                            love.window.showMessageBox("Error", "Failed to copy downloaded library -- Failed to read file " .. file, "error")
+                            love.filesystem.unmount("/temp/" .. current_artifact.name .. ".zip")
+                            failed = true
+                            return
+                        end
+                        local success, message = love.filesystem.write("env/" .. current_artifact.name .. "/" .. file, contents)
+                        if not success then
+                            love.window.showMessageBox("Error", "Failed to copy downloaded library -- " .. message, "error")
+                            love.filesystem.unmount("/temp/" .. current_artifact.name .. ".zip")
+                            failed = true
+                            return
+                        end
                     end
                 end
 
