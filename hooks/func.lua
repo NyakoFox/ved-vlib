@@ -71,28 +71,28 @@ function VLIB_SetupCanvases()
         towerbgTexture = love.graphics.newCanvas(320 + 16, 240 + 16),
         titlebgTexture = love.graphics.newCanvas(320 + 16, 240 + 16),
         generatedMinimapTexture = love.graphics.newCanvas(240, 180),
-        spritesTexture = tilesets["sprites.png"].white_img,
-        tilesTexture = tilesets["tiles.png"].img,
-        tilesWhiteTexture = tilesets["tiles.png"].white_img,
-        tilesTintTexture = tilesets["tiles.png"].img,
-        tiles2Texture = tilesets["tiles2.png"].img,
-        tiles2TintTexture = tilesets["tiles2.png"].img,
-        tiles3Texture = tilesets["tiles3.png"].img,
-        teleporterTexture = tilesets["teleporter.png"].white_img,
-        entcoloursTexture = tilesets["entcolours.png"].img,
-        entcoloursTintTexture = tilesets["entcolours.png"].img,
-        image0Texture = tilesets["levelcomplete.png"].img,
-        image1Texture = tilesets["minimap.png"].img,
-        image2Texture = tilesets["covered.png"].img,
-        image3Texture = tilesets["elephant.png"].white_img,
-        image4Texture = tilesets["gamecomplete.png"].img,
-        image5Texture = VLIB_LoadFile("fliplevelcomplete"),
-        image6Texture = VLIB_LoadFile("flipgamecomplete"),
-        image7Texture = VLIB_LoadFile("site", true),
-        image8Texture = VLIB_LoadFile("site2", true),
-        image9Texture = VLIB_LoadFile("site3", true),
-        image10Texture = VLIB_LoadFile("ending"),
-        image11Texture = VLIB_LoadFile("site4", true)
+        ["graphics/sprites.png"] = tilesets["sprites.png"].white_img,
+        ["graphics/tiles.png"] = tilesets["tiles.png"].img,
+        ["graphics/tiles.png-white"] = tilesets["tiles.png"].white_img,
+        ["graphics/tiles.png-tint"] = tilesets["tiles.png"].img,
+        ["graphics/tiles2.png"] = tilesets["tiles2.png"].img,
+        ["graphics/tiles2.png-tint"] = tilesets["tiles2.png"].img,
+        ["graphics/tiles3.png"] = tilesets["tiles3.png"].img,
+        ["graphics/teleporter.png"] = tilesets["teleporter.png"].white_img,
+        ["graphics/entcolours.png"] = tilesets["entcolours.png"].img,
+        ["graphics/entcolours.png-tint"] = tilesets["entcolours.png"].img,
+        ["graphics/levelcomplete.png"] = tilesets["levelcomplete.png"].img,
+        ["graphics/minimap.png"] = tilesets["minimap.png"].img,
+        ["graphics/covered.png"] = tilesets["covered.png"].img,
+        ["graphics/elephant.png"] = tilesets["elephant.png"].white_img,
+        ["graphics/gamecomplete.png"] = tilesets["gamecomplete.png"].img,
+        ["graphics/fliplevelcomplete.png"] = VLIB_LoadFile("fliplevelcomplete"),
+        ["graphics/flipgamecomplete.png"] = VLIB_LoadFile("flipgamecomplete"),
+        ["graphics/site.png"] = VLIB_LoadFile("site", true),
+        ["graphics/site2.png"] = VLIB_LoadFile("site2", true),
+        ["graphics/site3.png"] = VLIB_LoadFile("site3", true),
+        ["graphics/ending.png"] = VLIB_LoadFile("ending"),
+        ["graphics/site4.png"] = VLIB_LoadFile("site4", true)
     }
 
     -- Oh, let's loop through fonts as well.
@@ -182,7 +182,8 @@ function VLIB_DrawGame()
             end
         elseif message.type == DRAW_LINE then
             love.graphics.setLineWidth(1)
-            love.graphics.line(message.p1_x + 0.5, message.p1_y + 0.5, message.p2_x + 0.5, message.p2_y + 0.5)
+            love.graphics.setLineStyle("rough")
+            love.graphics.line(message.p1_x + 0.5, message.p1_y + 0.5, message.p2_x + 1, message.p2_y + 1)
         elseif message.type == DRAW_RECT then
             love.graphics.setLineWidth(1)
             -- do the same for dest
@@ -424,24 +425,6 @@ end
 function VLIB_StartLevel(thisroomx, thisroomy, posx, posy, gravitycontrol, music)
     VLIB_SetupCanvases()
 
-    for name, texture in pairs(VLIB_canvases) do
-        if type(texture) == "userdata" then
-            local w, h = texture:getDimensions()
-            VLIB_CHANNEL_IN:push({
-                type = "set_texture_size",
-                name = name,
-                w = w,
-                h = h
-            })
-        end
-    end
-    VLIB_CHANNEL_IN:push({
-        type = "set_texture_size",
-        name = "main",
-        w = VLIB_canvas_main:getWidth(),
-        h = VLIB_canvas_main:getHeight()
-    })
-
     VLIB_CHANNEL_IN:push(
         {
             type = "data_pos",
@@ -453,7 +436,21 @@ function VLIB_StartLevel(thisroomx, thisroomy, posx, posy, gravitycontrol, music
             music = music
         }
     )
+
     VLIB_CHANNEL_IN:push({ type = "start_level", editingmap = editingmap, translucent_bg = not s.opaqueroomnamebackground })
+
+    for name, texture in pairs(VLIB_canvases) do
+        if type(texture) == "userdata" then
+            local w, h = texture:getDimensions()
+            VLIB_CHANNEL_IN:push({
+                type = "set_texture_size",
+                name = name,
+                w = w,
+                h = h
+            })
+        end
+    end
+
     to_astate("vlib_playtesting")
 end
 
@@ -625,10 +622,10 @@ function VLIB_DownloadLocalizationFiles(loc_action, callback)
                 end
 
                 -- Mount the file we just downloaded
-                local success, message = love.filesystem.mount(download_path, "/temp/" .. current_artifact.name)
+                local success = love.filesystem.mount(download_path, "/temp/" .. current_artifact.name)
                 if not success then
                     failed = true
-                    love.window.showMessageBox("Error", "Failed to mount downloaded library -- " .. message, "error")
+                    love.window.showMessageBox("Error", "Failed to mount downloaded library", "error")
                     return
                 end
 
@@ -726,9 +723,9 @@ function VLIB_DownloadLibrary(action, callback)
             end
 
             -- Mount the file we just downloaded
-            local success, message = love.filesystem.mount(download_path, "/temp/" .. wanted_name)
+            local success = love.filesystem.mount(download_path, "/temp/" .. wanted_name)
             if not success then
-                love.window.showMessageBox("Error", "Failed to mount downloaded library -- " .. message, "error")
+                love.window.showMessageBox("Error", "Failed to mount downloaded library", "error")
                 VLIB_DOWNLOADING = false
                 return
             end

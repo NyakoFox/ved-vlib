@@ -15,6 +15,8 @@ if state == 1 and VLIB_SETTINGS.show_ghosts then
         VLIB_GHOST_CANVAS = love.graphics.newCanvas(320, 240)
     end
 
+    love.graphics.push()
+    love.graphics.origin()
     love.graphics.setCanvas(VLIB_GHOST_CANVAS)
     love.graphics.clear()
     for i = 1, #VLIB_GHOSTS do
@@ -29,6 +31,8 @@ if state == 1 and VLIB_SETTINGS.show_ghosts then
         end
     end
     love.graphics.setCanvas()
+    love.graphics.pop()
+
     love.graphics.setColor(255, 255, 255, 128)
     love.graphics.draw(VLIB_GHOST_CANVAS, screenoffset, 0, 0, 2)
     love.graphics.setColor(255, 255, 255, 255)

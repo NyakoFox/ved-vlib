@@ -30,6 +30,8 @@ return {
                     function(x, y, maxw, maxh)
                         font_ui:printf("Game speed", x, y, maxw, "center")
                         for k,v in pairs({
+                            {1, "3400%"},
+                            {17, "200%"},
                             {34, "100%"},
                             {41, "80%"},
                             {55, "60%"},
@@ -41,7 +43,7 @@ return {
                                 end
                             )
                         end
-                        return 112, 20+24*4
+                        return 112, 20+24*6
                     end
                 ),
 

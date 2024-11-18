@@ -6,6 +6,10 @@ function love.mousemoved(x, y, dx, dy, istouch)
         old_mousemoved(x, y, dx, dy, istouch)
     end
 
+    if s.pscale ~= 1 then
+        x, y = math.floor(x*s.pscale^-1), math.floor(y*s.pscale^-1)
+    end
+
     if (in_astate("vlib_playtesting")) then
         VLIB_CHANNEL_IN:push({
             type = "mouse",
