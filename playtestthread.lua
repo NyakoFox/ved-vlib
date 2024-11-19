@@ -202,11 +202,11 @@ while true do
         end
         v_lib.set_roomname_bg(translucent_bg)
     elseif data.type == "stop" then
-        v_lib.return_to_idlemode()
         channel_out:push({
             type = "state",
             state = "IDLEMODE"
         })
+        v_lib.return_to_idlemode()
     elseif data.type == "imagedata" then
         local casted_ptr = ffi.cast("uint8_t*", data.data)
         v_lib.setScreenbufferPointer(casted_ptr)
