@@ -1,10 +1,9 @@
 # Ved Playtesting (VLIB)
 
-> Using VVVVVV inside of Ved.
+A plugin which allows you to playtest your VVVVVV level INSIDE of Ved! No corners cut, no compromises -- just VVVVVV!
 
 > [!WARNING]
-> This requires Ved 1.11.1 or later, which hasn't yet been released.
-> There are builds on the [VVVVVV Discord server](https://discord.gg/Zf7Nzea) in the #ved channel.
+> This requires Ved 1.11.1 or later, which you can download [here](https://tolp.nl/ved/download).
 
 ## Wait, what?
 
@@ -29,9 +28,9 @@ This is a bit more manual -- you have to download the new release and replace th
 
 ## Screenshots?
 
-![A screenshot of the level Abort! 2 running inside of Ved](https://i.imgur.com/WVY9ha1.png)
+![A screenshot of the level Interstellar Agents running inside of Ved](https://i.imgur.com/SPItIRt.png)
 
-![A screenshot of the flag editor in the plugin](https://i.imgur.com/DmkwDKJ.png)
+![A screenshot of the flag editor in the plugin](https://i.imgur.com/xsVGKA3.png)
 
 ## Credits
 

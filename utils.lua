@@ -1,5 +1,9 @@
 local ffi = require("ffi")
 
+function VLIB_Clamp(x, min, max)
+    return math.max(min, math.min(max, x))
+end
+
 function VLIB_IsArray(tbl)
     for k,_ in pairs(tbl) do
         if type(k) ~= "number" then

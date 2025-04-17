@@ -44,6 +44,8 @@ ffi.cdef([[
     void return_to_idlemode(void);
     bool should_vvvvvv_exit(void);
 
+    int version(void);
+
     void clear_input(void);
     bool get_flag(int flag);
     void set_flag(int flag, bool value);
@@ -71,8 +73,19 @@ ffi.cdef([[
         DRAW_TEXTURE = 8,
         DRAW_TEXTURE_EXT = 9,
         DRAW_SET_TINT_COLOR = 10,
-        DRAW_SET_TINT_ALPHA = 11
+        DRAW_SET_TINT_ALPHA = 11,
+        DRAW_SET_BLENDMODE = 12,
+        DRAW_SET_TEXTURE_BLENDMODE = 13
     } draw_type;
+
+    typedef enum {
+        BLENDMODE_INVALID = -1,
+        BLENDMODE_NONE = 0,
+        BLENDMODE_BLEND = 1,
+        BLENDMODE_ADD = 2,
+        BLENDMODE_MOD = 4,
+        BLENDMODE_MUL = 8
+    } blend_mode;
 
     typedef struct {
         int x;
@@ -108,6 +121,7 @@ ffi.cdef([[
         bool flip_y;
         bool src_whole;
         bool dest_whole;
+        blend_mode blendmode;
     } draw_message;
 
     draw_message pop_draw_messages(void);
@@ -184,6 +198,10 @@ while true do
     elseif data.type == "start" then
         v_lib.play_level_init()
         v_lib.mainLoop(#args + 1, ffi.cast("char**", argv))
+        channel_out:push({
+            type = "start",
+            version = v_lib.version()
+        })
         started = true
     elseif data.type == "settings" then
         vvvvvv_settings = data
@@ -285,7 +303,7 @@ while true do
             type = "render"
         })
     elseif data.type == "clear_input" and started then
-        v_lib.clear_input();
+        v_lib.clear_input()
     elseif data.type == "key" and started then
         if data.state == "pressed" then
             v_lib.simulate_keyevent("keydown", data.key, data.repeating)

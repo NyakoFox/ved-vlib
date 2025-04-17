@@ -2,6 +2,107 @@ ved_require(VLIB_PLUGIN_PATH .. "utils")
 ved_require(VLIB_PLUGIN_PATH .. "callbacks")
 ved_require(VLIB_PLUGIN_PATH .. "draw")
 
+local DRAW_NONE = -1
+local DRAW_RECT = 0
+local DRAW_LINE = 1
+local DRAW_CIRCLE = 2
+local DRAW_TEXT = 3
+local DRAW_SET_COLOR = 4
+local DRAW_FILL_RECT = 5
+local DRAW_CLEAR = 6
+local DRAW_SET_TARGET = 7
+local DRAW_TEXTURE = 8
+local DRAW_TEXTURE_EXT = 9
+local DRAW_SET_TINT_COLOR = 10
+local DRAW_SET_TINT_ALPHA = 11
+local DRAW_SET_BLENDMODE = 12
+local DRAW_SET_TEXTURE_BLENDMODE = 13
+
+local BLENDMODE_INVALID = -1
+local BLENDMODE_NONE = 0
+local BLENDMODE_BLEND = 1
+local BLENDMODE_ADD = 2
+local BLENDMODE_MOD = 4
+local BLENDMODE_MUL = 8
+
+function VLIB_OnThreadError(errorstr)
+    dialog.create("VLIB has errored! Playtesting will be unavailable.\n\n" .. errorstr, DBS.OK)
+    cons("VLIB thread error: " .. errorstr)
+    VLIB_READY = false
+    VLIB_UNAVAILABLE = true
+end
+
+function VLIB_IsAvailable()
+    if VLIB_UNAVAILABLE then
+        return false
+    end
+
+    if VLIB_SESSION_DISABLED then
+        return false
+    end
+
+    return VLIB_READY
+end
+
+function VLIB_Enabled()
+    if VLIB_SESSION_DISABLED then
+        return false
+    end
+
+    return VLIB_SETTINGS.enabled
+end
+
+function VLIB_StartPlaytesting()
+    if not VLIB_Enabled() then
+        return false -- Continue to normal playtesting
+    end
+
+    if not VLIB_READY then
+        if VLIB_UNAVAILABLE then
+            dialog.create("VVVVVV is not available for playtesting.\n\nPress APPLY to disable VLIB for this session.", { DB.APPLY, DB.OK }, function(button, fields)
+                if button == DB.OK then
+                    return
+                elseif button == DB.APPLY then
+                    VLIB_SESSION_DISABLED = true
+                    return
+                end
+            end)
+        else
+            dialog.create("VVVVVV is not yet ready to launch.", DBS.OK)
+        end
+        return true -- Don't continue with vanilla playtesting (or anything under this)
+    end
+
+	if playtesting_uistate == PT_UISTATE.ASKING then
+		-- Apparently we pressed Enter twice.
+		atx, aty, flipped = playtesting_find_first_checkpoint()
+		playtesting_endaskwherestart(atx, aty, flipped, true)
+		return
+	end
+
+	-- Time to start the thread
+	playtesting_engstate = PT_ENGSTATE.IDLE
+	playtesting_uistate = PT_UISTATE.ASKING
+
+	-- Note: thissavederror will contain level contents if not an error
+	local thissavedsuccess, thissavederror = savelevel(nil, metadata, roomdata, entitydata, levelmetadata, scripts, vedmetadata, extra, false, false)
+
+	if not thissavedsuccess then
+		dialog.create(L.SAVENOSUCCESS .. anythingbutnil(thissavederror))
+		playtesting_cancelask()
+	else
+		playtesting_uistate = PT_UISTATE.ASKING
+
+        VLIB_CHANNEL_IN:push(
+            {
+                type = "level_data",
+                level_data = thissavederror
+            }
+        )
+	end
+    return true -- Don't continue with vanilla playtesting
+end
+
 function VLIB_GetTexture(texture)
     if (texture == "main") then
         return VLIB_canvas_main
@@ -54,9 +155,9 @@ function VLIB_SetupCanvases()
     VLIB_canvas_main = love.graphics.newCanvas(320, 240)
 
     VLIB_tinted_canvases = {
-        tilesTintTexture = true,
-        tiles2TintTexture = true,
-        entcoloursTintTexture = true
+        ["graphics/tiles.png-tint"] = true,
+        ["graphics/tiles2.png-tint"] = true,
+        ["graphics/entcolours.png-tint"] = true
     }
 
     VLIB_canvases = {
@@ -108,11 +209,68 @@ function VLIB_SetupCanvases()
     for name, _ in pairs(VLIB_canvases) do
         VLIB_texture_colors[name] = {255, 255, 255, 255}
     end
+
+    VLIB_texture_blendmodes = {}
+    for name, _ in pairs(VLIB_canvases) do
+        VLIB_texture_blendmodes[name] = BLENDMODE_NONE
+    end
+
+    VLIB_blend_mode = BLENDMODE_NONE
+
+    -- ok, load regions
+    local levelassets = getlevelassetsfolder()
+    if levelassets ~= nil then
+        local folder = levelassets .. graphicsfolder_rel
+
+        local success, files = listfiles_generic(folder, ".png", true)
+        for k,file in pairs(files) do
+            cons(file.name)
+            if file.name:sub(1, 6) == "region" then
+                local no_ext = file.name:sub(1, -5)
+                VLIB_canvases["graphics/" .. file.name] = VLIB_LoadFile(no_ext, false)
+            end
+        end
+    end
+end
+
+function VLIB_LoadImageData(name)
+    if love.filesystem.exists(name) then
+        return love.image.newImageData(name)
+    end
+    return nil
 end
 
 function VLIB_LoadFile(name, make_white)
-    -- TODO: level specific assets!!!!!!!!!!!!!!!!
-    local img = love.image.newImageData(VLIB_PLUGIN_PATH .. "graphics/" .. name .. ".png")
+    local levelassets = getlevelassetsfolder()
+    if levelassets ~= nil then
+        local folder = levelassets .. graphicsfolder_rel .. dirsep
+        local success, contents = readfile(folder .. name .. ".png")
+        if not success then
+            return nil
+        end
+
+        local img = love.image.newImageData(
+			love.filesystem.newFileData(contents, name .. ".png", "file")
+		)
+
+        if img then
+            if make_white then
+                img:mapPixel(function(x, y, r, g, b, a)
+                    return 255, 255, 255, a
+                end)
+            end
+            return love.graphics.newImage(img)
+        end
+        cons(folder .. name .. ".png")
+        return nil
+    end
+
+    local img = VLIB_LoadImageData(VLIB_PLUGIN_PATH .. graphicsfolder_rel .. dirsep .. name .. ".png")
+
+    if not img then
+        return nil
+    end
+
     if make_white then
         img:mapPixel(function(x, y, r, g, b, a)
             return 255, 255, 255, a
@@ -121,19 +279,37 @@ function VLIB_LoadFile(name, make_white)
     return love.graphics.newImage(img)
 end
 
-local DRAW_NONE = -1
-local DRAW_RECT = 0
-local DRAW_LINE = 1
-local DRAW_CIRCLE = 2
-local DRAW_TEXT = 3
-local DRAW_SET_COLOR = 4
-local DRAW_FILL_RECT = 5
-local DRAW_CLEAR = 6
-local DRAW_SET_TARGET = 7
-local DRAW_TEXTURE = 8
-local DRAW_TEXTURE_EXT = 9
-local DRAW_SET_TINT_COLOR = 10
-local DRAW_SET_TINT_ALPHA = 11
+function VLIB_SetBlendMode(blend_mode)
+    -- TODO: As LOVE2D does not have blend modes which match SDL's, we have to make custom ones.
+    -- Unfortunately, that was only added in LOVE 12, so we can't do this yet.
+
+    --[[
+    if VLIB_blend_mode == BLENDMODE_BLEND then
+        love.graphics.setBlendMode("alpha", "premultiplied")
+    elseif VLIB_blend_mode == BLENDMODE_ADD then
+        love.graphics.setBlendMode("add", "premultiplied")
+    elseif VLIB_blend_mode == BLENDMODE_MOD then
+        love.graphics.setBlendMode("modulate", "premultiplied")
+    elseif VLIB_blend_mode == BLENDMODE_MUL then
+        love.graphics.setBlendMode("multiply", "premultiplied")
+    else
+        love.graphics.setBlendMode("replace", "premultiplied")
+    end
+    ]]
+end
+
+function VLIB_SetupPrimitive()
+    VLIB_SetBlendMode(VLIB_blend_mode)
+end
+
+function VLIB_SetupTexture(texture)
+    local blend_mode = VLIB_texture_blendmodes[texture] or BLENDMODE_NONE
+    if (blend_mode == BLENDMODE_INVALID) then
+        return
+    end
+
+    VLIB_SetBlendMode(blend_mode)
+end
 
 function VLIB_DrawGame()
     VLIB_CHANNEL_IN:push({
@@ -149,6 +325,7 @@ function VLIB_DrawGame()
         end
     end
 
+    local blendmode, alphamode = love.graphics.getBlendMode()
     love.graphics.push()
     love.graphics.reset()
     love.graphics.setDefaultFilter("nearest", "nearest", 1)
@@ -180,11 +357,17 @@ function VLIB_DrawGame()
             else
                 VLIB_texture_colors[message.texture] = {255, 255, 255, message.color_a}
             end
+        elseif message.type == DRAW_SET_BLENDMODE then
+            VLIB_blend_mode = message.blendmode
+        elseif message.type == DRAW_SET_TEXTURE_BLENDMODE then
+            VLIB_texture_blendmodes[message.texture] = message.blendmode
         elseif message.type == DRAW_LINE then
+            VLIB_SetupPrimitive()
             love.graphics.setLineWidth(1)
             love.graphics.setLineStyle("rough")
             love.graphics.line(message.p1_x + 0.5, message.p1_y + 0.5, message.p2_x + 1, message.p2_y + 1)
         elseif message.type == DRAW_RECT then
+            VLIB_SetupPrimitive()
             love.graphics.setLineWidth(1)
             -- do the same for dest
             local dest = {}
@@ -202,6 +385,7 @@ function VLIB_DrawGame()
 
             love.graphics.rectangle("line", dest.x + 0.5, dest.y + 0.5, dest.w - 1, dest.h - 1)
         elseif message.type == DRAW_FILL_RECT then
+            VLIB_SetupPrimitive()
             -- do the same for dest
             local dest = {}
             if (message.dest_whole) then
@@ -223,6 +407,7 @@ function VLIB_DrawGame()
             love.graphics.setCanvas(VLIB_GetTexture(message.texture))
         elseif message.type == DRAW_TEXTURE then
             -- uses src and dest. src is the rectangle of the texture to draw, dest is the rectangle to draw it to
+            VLIB_SetupTexture(message.texture)
             local texture = VLIB_GetTexture(message.texture)
             local grayscale = VLIB_tinted_canvases[message.texture]
 
@@ -232,10 +417,10 @@ function VLIB_DrawGame()
             local src = {}
             local quad
             if (message.src_whole) then
-                quad = love.graphics.newQuad(0, 0, texture_width, texture_height, texture_width, texture_height)
+                quad = VLIB_GetQuad(0, 0, texture_width, texture_height, texture_width, texture_height)
                 src = {x = 0, y = 0, w = texture_width, h = texture_height}
             else
-                quad = love.graphics.newQuad(message.src_x, message.src_y, message.src_w, message.src_h, texture_width, texture_height)
+                quad = VLIB_GetQuad(message.src_x, message.src_y, message.src_w, message.src_h, texture_width, texture_height)
                 src.x = message.src_x
                 src.y = message.src_y
                 src.w = message.src_w
@@ -273,6 +458,7 @@ function VLIB_DrawGame()
             love.graphics.setColor(old_r, old_g, old_b, old_a)
         elseif message.type == DRAW_TEXTURE_EXT then
             -- optional angle, center point and flip parameters
+            VLIB_SetupTexture(message.texture)
             local texture = VLIB_GetTexture(message.texture)
             local grayscale = VLIB_tinted_canvases[message.texture]
 
@@ -282,10 +468,10 @@ function VLIB_DrawGame()
             local src = {}
             local quad
             if (message.src_whole) then
-                quad = love.graphics.newQuad(0, 0, texture_width, texture_height, texture_width, texture_height)
+                quad = VLIB_GetQuad(0, 0, texture_width, texture_height, texture_width, texture_height)
                 src = {x = 0, y = 0, w = texture_width, h = texture_height}
             else
-                quad = love.graphics.newQuad(message.src_x, message.src_y, message.src_w, message.src_h, texture_width, texture_height)
+                quad = VLIB_GetQuad(message.src_x, message.src_y, message.src_w, message.src_h, texture_width, texture_height)
                 src.x = message.src_x
                 src.y = message.src_y
                 src.w = message.src_w
@@ -330,6 +516,8 @@ function VLIB_DrawGame()
     love.graphics.setCanvas()
     love.graphics.pop()
 
+    love.graphics.setBlendMode(blendmode, alphamode)
+
     love.graphics.setColor(255, 255, 255, 255)
     love.graphics.draw(VLIB_canvas_main, screenoffset, 0, 0, 2)
 end
@@ -367,7 +555,8 @@ function VLIB_InitializeSettings()
         last_version = nil,
         base_vlib_url = "https://api.github.com/repos/NyakoFox/VVVVVV/actions/",
         vlib_action = "CI",
-        show_ghosts = false
+        show_ghosts = false,
+        enabled = true
     }
 
     local settings_path = "/vlib-settings.json"
@@ -414,12 +603,11 @@ function VLIB_LaunchGameInThread()
         path = love.filesystem.getSaveDirectory() .. "/env/"
     })
 
-
     VLIB_CHANNEL_IN:push({
         type = "start"
     })
 
-    VLIB_READY = true
+    VLIB_READY_TO_LISTEN = true
 end
 
 function VLIB_StartLevel(thisroomx, thisroomy, posx, posy, gravitycontrol, music)
@@ -468,6 +656,15 @@ function VLIB_fetch(url, callback)
     })
 
     VLIB_HTTPS.next_key = VLIB_HTTPS.next_key + 1
+end
+
+function VLIB_Screenshot()
+    VLIB_TAKE_SCREENSHOT = true
+end
+
+function VLIB_DisplayScreenshot(success)
+    VLIB_SCREENSHOT_SUCCESS = success
+    VLIB_SCREENSHOT_TIMER = VLIB_SCREENSHOT_TIMER_MAX
 end
 
 function VLIB_DownloadData(callback)
@@ -670,6 +867,20 @@ function VLIB_DownloadLocalizationFiles(loc_action, callback)
             end)
         end
     end)
+end
+
+function VLIB_ExitPlaytesting()
+    playtesting_engstate = PT_ENGSTATE.OFF
+    playtesting_uistate = PT_UISTATE.OFF
+    tostate(1, true)
+    love.mouse.setVisible(true)
+    VLIB_GHOSTS = {}
+    VLIB_CHANNEL_IN:push({
+        type = "ghostinfo"
+    })
+    VLIB_CHANNEL_IN:push({
+        type = "clear_input"
+    })
 end
 
 function VLIB_DownloadLibrary(action, callback)

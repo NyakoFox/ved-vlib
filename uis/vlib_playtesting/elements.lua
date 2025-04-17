@@ -30,7 +30,7 @@ return {
                     function(x, y, maxw, maxh)
                         font_ui:printf("Game speed", x, y, maxw, "center")
                         for k,v in pairs({
-                            {1, "3400%"},
+                            {8, "400%"},
                             {17, "200%"},
                             {34, "100%"},
                             {41, "80%"},
@@ -106,6 +106,15 @@ return {
     ),
     RightBar(
         {
+            LabelButton("Screenshot", function()
+                VLIB_Screenshot()
+            end),
+            LabelButton("Open Dir", function()
+                if not love.filesystem.exists("screenshots") then
+                    love.filesystem.createDirectory("screenshots")
+                end
+                explore_folder(love.filesystem.getSaveDirectory() .. "/screenshots")
+            end),
         },
         {
             DrawingFunction(

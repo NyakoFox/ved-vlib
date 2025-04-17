@@ -5,4 +5,8 @@ return function(key)
         state = "pressed",
         repeating = false
     })
+
+    if (key == "f6") then
+        VLIB_Screenshot()
+    end
 end
