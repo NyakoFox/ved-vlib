@@ -28,9 +28,9 @@ This is a bit more manual -- you have to download the new release and replace th
 
 ## Screenshots?
 
-![A screenshot of the level Interstellar Agents running inside of Ved](https://i.imgur.com/SPItIRt.png)
+![A screenshot of the level Interstellar Agents running inside of Ved](https://i.imgur.com/vEkSjGZ.png)
 
-![A screenshot of the flag editor in the plugin](https://i.imgur.com/xsVGKA3.png)
+![A screenshot of the flag editor in the plugin](https://i.imgur.com/ioDHCcv.png)
 
 ## Credits
 
