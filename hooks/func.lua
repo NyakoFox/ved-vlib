@@ -613,6 +613,10 @@ end
 function VLIB_StartLevel(thisroomx, thisroomy, posx, posy, gravitycontrol, music)
     VLIB_SetupCanvases()
 
+    VLIB_CHANNEL_IN:push({
+        type = "clear_input"
+    })
+
     VLIB_CHANNEL_IN:push(
         {
             type = "data_pos",
