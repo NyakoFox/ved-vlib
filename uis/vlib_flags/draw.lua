@@ -10,12 +10,12 @@ return function()
     love.graphics.rectangle("fill", screenoffset, 0, 640, 480)
     love.graphics.setColor(255,255,255)
 
-    if vedmetadata then
+    if level.vedmetadata then
         local longest_label = 0
         local x = 10
         local y = 10
         for i = 1, 100 do
-            local label = "[" .. i - 1 .. "] " .. vedmetadata.flaglabel[i - 1]
+            local label = "[" .. i - 1 .. "] " .. level.vedmetadata.flaglabel[i - 1]
             local width = font_ui:getWidth(label)
             if width > longest_label then
                 longest_label = width
