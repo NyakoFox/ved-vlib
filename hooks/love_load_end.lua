@@ -29,12 +29,6 @@ end
 
 VLIB_GHOST_CANVAS = love.graphics.newCanvas(320, 240)
 
-VLIB_IMAGE_PLAY = love.graphics.newImage(VLIB_PLUGIN_PATH .. "images/vlib_play_hq.png")
-VLIB_IMAGE_PLAY:setFilter("nearest", "nearest")
-
-VLIB_IMAGE_PLAYSTOP = love.graphics.newImage(VLIB_PLUGIN_PATH .. "images/vlib_playstop_hq.png")
-VLIB_IMAGE_PLAYSTOP:setFilter("nearest", "nearest")
-
 VLIB_InitializeSettings()
 
 VLIB_LaunchNetworkingThread()

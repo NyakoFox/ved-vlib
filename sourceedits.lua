@@ -26,9 +26,9 @@ sourceedits =
 						usethisbtn = image.playgraybtn_hq
 					else
 						if playtesting_uistate == PT_UISTATE.ASKING then
-							usethisbtn = VLIB_IMAGE_PLAYSTOP
+							usethisbtn = "ui/images/vlib_playstop_hq"
 						else
-							usethisbtn = VLIB_IMAGE_PLAY
+							usethisbtn = "ui/images/vlib_play_hq"
 						end
 					end
 				elseif playtesting_available then
