@@ -77,7 +77,7 @@ function VLIB_StartPlaytesting()
 		-- Apparently we pressed Enter twice.
 		atx, aty, flipped = playtesting_find_first_checkpoint()
 		playtesting_endaskwherestart(atx, aty, flipped, true)
-		return
+		return true
 	end
 
 	-- Time to start the thread
