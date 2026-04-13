@@ -144,6 +144,7 @@ function VLIB_GetTexture(texture)
                 else
                     font_canvas = fonts_custom[font].image
                 end
+
                 VLIB_canvases[texture] = font_canvas
             end
             return font_canvas
@@ -428,10 +429,8 @@ function VLIB_DrawGame()
             local texture = VLIB_GetTexture(message.texture)
             local grayscale = VLIB_tinted_canvases[message.texture]
 
-            local texture_width = texture:getWidth()
-            local texture_height = texture:getHeight()
+            local texture_width, texture_height = texture:getDimensions()
 
-            local src = {}
             local quad
             if (message.src_whole) then
                 quad = VLIB_GetQuad(0, 0, texture_width, texture_height, texture_width, texture_height)
@@ -481,8 +480,7 @@ function VLIB_DrawGame()
             local texture = VLIB_GetTexture(message.texture)
             local grayscale = VLIB_tinted_canvases[message.texture]
 
-            local texture_width = texture:getWidth()
-            local texture_height = texture:getHeight()
+            local texture_width, texture_height = texture:getDimensions()
 
             local quad
             if (message.src_whole) then
@@ -653,18 +651,7 @@ function VLIB_StartLevel(thisroomx, thisroomy, posx, posy, gravitycontrol, music
 
     for name, texture in pairs(VLIB_canvases) do
         if type(texture) == "userdata" then
-            local w, h
-            if string.sub(name, 1, 12) == "font_custom_" then
-                local chopped_name = string.sub(name, 13)
-                local font_size = VLIB_FONT_SIZES[chopped_name]
-                if font_size ~= nil then
-                    w, h = unpack(font_size)
-                else
-                    w, h = texture:getDimensions()
-                end
-            else
-                w, h = texture:getDimensions()
-            end
+            local w, h = texture:getDimensions()
 
             VLIB_CHANNEL_IN:push({
                 type = "set_texture_size",
@@ -903,46 +890,6 @@ function VLIB_DownloadLocalizationFiles(loc_action, callback)
             end)
         end
     end)
-end
-
-function VLIB_LoadFontFile(custom_folder, font_name)
-	local png_contents = read_font_file(custom_folder, font_name, ".png")
-	if png_contents ~= nil then
-		imgdata = love.image.newImageData(
-			love.filesystem.newFileData(png_contents, font_name .. ".png", "file")
-		)
-
-        if imgdata == nil then
-            return
-        end
-
-        return { imgdata:getDimensions() }
-	end
-end
-
-function VLIB_CacheFontSizes()
-    VLIB_FONT_SIZES = {}
-
-    for name, font in pairs(fonts_custom) do
-
-		local levelassets = getlevelassetsfolder()
-        if levelassets == nil then
-            break
-        end
-
-        local fonts_folder = levelassets .. graphicsfolder_rel
-
-        VLIB_FONT_SIZES[name] = VLIB_LoadFontFile(fonts_folder, "font")
-
-        local success, files = listfiles_generic(fonts_folder, ".fontmeta", true)
-        for k, file in pairs(files) do
-            if file.name ~= "font.fontmeta" then
-                local font_name = file.name:sub(1, -10)
-                VLIB_FONT_SIZES[name] = VLIB_LoadFontFile(fonts_folder, font_name)
-                print("Cached font size for " .. font_name .. ": " .. VLIB_FONT_SIZES[name][1] .. "x" .. VLIB_FONT_SIZES[name][2])
-            end
-        end
-    end
 end
 
 function VLIB_ExitPlaytesting()
