@@ -114,5 +114,17 @@ sourceedits =
 			luapattern = false,
 			allowmultiple = false
 		}
+	},
+	["func"] =
+	{
+		{
+			find = [[loadfonts_custom()]],
+			replace = [[loadfonts_custom()
+	VLIB_CacheFontSizes()
+			]],
+			ignore_error = false,
+			luapattern = false,
+			allowmultiple = true
+		}
 	}
 }

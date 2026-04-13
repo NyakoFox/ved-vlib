@@ -2,6 +2,8 @@ ved_require(VLIB_PLUGIN_PATH .. "utils")
 ved_require(VLIB_PLUGIN_PATH .. "callbacks")
 ved_require(VLIB_PLUGIN_PATH .. "draw")
 
+require("table.new")
+
 local DRAW_NONE = -1
 local DRAW_RECT = 0
 local DRAW_LINE = 1
@@ -207,7 +209,7 @@ function VLIB_SetupCanvases()
 
     VLIB_texture_colors = {}
     for name, _ in pairs(VLIB_canvases) do
-        VLIB_texture_colors[name] = {255, 255, 255, 255}
+        VLIB_texture_colors[name] = { 255, 255, 255, 255 }
     end
 
     VLIB_texture_blendmodes = {}
@@ -224,7 +226,6 @@ function VLIB_SetupCanvases()
 
         local success, files = listfiles_generic(folder, ".png", true)
         for k,file in pairs(files) do
-            cons(file.name)
             if file.name:sub(1, 6) == "region" then
                 local no_ext = file.name:sub(1, -5)
                 VLIB_canvases["graphics/" .. file.name] = VLIB_LoadFile(no_ext, false)
@@ -331,14 +332,29 @@ function VLIB_DrawGame()
     love.graphics.setDefaultFilter("nearest", "nearest", 1)
     love.graphics.setCanvas(VLIB_canvas_main)
 
-    local messages = {}
+    local messages = table.new(VLIB_CHANNEL_OUT_DRAW:getCount(), 0)
+
+    local src = {
+        x = 0,
+        y = 0,
+        w = 0,
+        h = 0
+    }
+
+    local dst = {
+        x = 0,
+        y = 0,
+        w = 0,
+        h = 0
+    }
+
     while VLIB_CHANNEL_OUT_DRAW:getCount() > 0 do
         local message = VLIB_CHANNEL_OUT_DRAW:pop()
-        -- insert to front
-        table.insert(messages, 1, message)
+        table.insert(messages, message)
     end
 
-    for _, message in ipairs(messages) do
+    for i = #messages - 1, 1, -1 do
+        local message = messages[i]
         if message.type == DRAW_SET_COLOR then
             love.graphics.setColor(message.color_r, message.color_g, message.color_b, message.color_a)
         elseif message.type == DRAW_SET_TINT_COLOR then
@@ -348,7 +364,9 @@ function VLIB_DrawGame()
                 color[2] = message.color_g
                 color[3] = message.color_b
             else
-                VLIB_texture_colors[message.texture] = {message.color_r, message.color_g, message.color_b, 255}
+                VLIB_texture_colors[message.texture] = {
+                    message.color_r, message.color_g, message.color_b, 255
+                }
             end
         elseif message.type == DRAW_SET_TINT_ALPHA then
             local color = VLIB_texture_colors[message.texture]
@@ -370,37 +388,36 @@ function VLIB_DrawGame()
             VLIB_SetupPrimitive()
             love.graphics.setLineWidth(1)
             -- do the same for dest
-            local dest = {}
+
             if (message.dest_whole) then
-                dest.x = 0
-                dest.y = 0
-                dest.w = love.graphics.getCanvas():getWidth()
-                dest.h = love.graphics.getCanvas():getHeight()
+                dst.x = 0
+                dst.y = 0
+                dst.w = love.graphics.getCanvas():getWidth()
+                dst.h = love.graphics.getCanvas():getHeight()
             else
-                dest.x = message.dest_x
-                dest.y = message.dest_y
-                dest.w = message.dest_w
-                dest.h = message.dest_h
+                dst.x = message.dest_x
+                dst.y = message.dest_y
+                dst.w = message.dest_w
+                dst.h = message.dest_h
             end
 
-            love.graphics.rectangle("line", dest.x + 0.5, dest.y + 0.5, dest.w - 1, dest.h - 1)
+            love.graphics.rectangle("line", dst.x + 0.5, dst.y + 0.5, dst.w - 1, dst.h - 1)
         elseif message.type == DRAW_FILL_RECT then
             VLIB_SetupPrimitive()
             -- do the same for dest
-            local dest = {}
             if (message.dest_whole) then
-                dest.x = 0
-                dest.y = 0
-                dest.w = love.graphics.getCanvas():getWidth()
-                dest.h = love.graphics.getCanvas():getHeight()
+                dst.x = 0
+                dst.y = 0
+                dst.w = love.graphics.getCanvas():getWidth()
+                dst.h = love.graphics.getCanvas():getHeight()
             else
-                dest.x = message.dest_x
-                dest.y = message.dest_y
-                dest.w = message.dest_w
-                dest.h = message.dest_h
+                dst.x = message.dest_x
+                dst.y = message.dest_y
+                dst.w = message.dest_w
+                dst.h = message.dest_h
             end
 
-            love.graphics.rectangle("fill", dest.x, dest.y, dest.w, dest.h)
+            love.graphics.rectangle("fill", dst.x, dst.y, dst.w, dst.h)
         elseif message.type == DRAW_CLEAR then
             love.graphics.clear(love.graphics.getColor())
         elseif message.type == DRAW_SET_TARGET then
@@ -418,7 +435,10 @@ function VLIB_DrawGame()
             local quad
             if (message.src_whole) then
                 quad = VLIB_GetQuad(0, 0, texture_width, texture_height, texture_width, texture_height)
-                src = {x = 0, y = 0, w = texture_width, h = texture_height}
+                src.x = 0
+                src.y = 0
+                src.w = texture_width
+                src.h = texture_height
             else
                 quad = VLIB_GetQuad(message.src_x, message.src_y, message.src_w, message.src_h, texture_width, texture_height)
                 src.x = message.src_x
@@ -428,21 +448,20 @@ function VLIB_DrawGame()
             end
 
             -- do the same for dest
-            local dest = {}
             if (message.dest_whole) then
-                dest.x = 0
-                dest.y = 0
-                dest.w = love.graphics.getCanvas():getWidth()
-                dest.h = love.graphics.getCanvas():getHeight()
+                dst.x = 0
+                dst.y = 0
+                dst.w = love.graphics.getCanvas():getWidth()
+                dst.h = love.graphics.getCanvas():getHeight()
             else
-                dest.x = message.dest_x
-                dest.y = message.dest_y
-                dest.w = message.dest_w
-                dest.h = message.dest_h
+                dst.x = message.dest_x
+                dst.y = message.dest_y
+                dst.w = message.dest_w
+                dst.h = message.dest_h
             end
 
-            local scale_x = dest.w / src.w
-            local scale_y = dest.h / src.h
+            local scale_x = dst.w / src.w
+            local scale_y = dst.h / src.h
 
             local old_r, old_g, old_b, old_a = love.graphics.getColor()
             love.graphics.setColor(VLIB_texture_colors[message.texture] or {255, 255, 255, 255})
@@ -450,7 +469,7 @@ function VLIB_DrawGame()
             if grayscale and shader_tint then
                 love.graphics.setShader(shader_tint)
             end
-            love.graphics.draw(texture, quad, dest.x, dest.y, 0, scale_x, scale_y)
+            love.graphics.draw(texture, quad, dst.x, dst.y, 0, scale_x, scale_y)
             if grayscale and shader_tint then
                 love.graphics.setShader()
             end
@@ -465,11 +484,13 @@ function VLIB_DrawGame()
             local texture_width = texture:getWidth()
             local texture_height = texture:getHeight()
 
-            local src = {}
             local quad
             if (message.src_whole) then
                 quad = VLIB_GetQuad(0, 0, texture_width, texture_height, texture_width, texture_height)
-                src = {x = 0, y = 0, w = texture_width, h = texture_height}
+                src.x = 0
+                src.y = 0
+                src.w = texture_width
+                src.h = texture_height
             else
                 quad = VLIB_GetQuad(message.src_x, message.src_y, message.src_w, message.src_h, texture_width, texture_height)
                 src.x = message.src_x
@@ -479,24 +500,23 @@ function VLIB_DrawGame()
             end
 
             -- do the same for dest
-            local dest = {}
             if (message.dest_whole) then
-                dest.x = 0
-                dest.y = 0
-                dest.w = love.graphics.getCanvas():getWidth()
-                dest.h = love.graphics.getCanvas():getHeight()
+                dst.x = 0
+                dst.y = 0
+                dst.w = love.graphics.getCanvas():getWidth()
+                dst.h = love.graphics.getCanvas():getHeight()
             else
-                dest.x = message.dest_x
-                dest.y = message.dest_y
-                dest.w = message.dest_w
-                dest.h = message.dest_h
+                dst.x = message.dest_x
+                dst.y = message.dest_y
+                dst.w = message.dest_w
+                dst.h = message.dest_h
             end
 
-            local scale_x = dest.w / src.w
-            local scale_y = dest.h / src.h
+            local scale_x = dst.w / src.w
+            local scale_y = dst.h / src.h
 
             local angle = message.angle or 0
-            local center = message.center or {x = 0, y = 0}
+            local center = message.center or { x = 0, y = 0 }
             local flip_x = message.flip_x and -1 or 1
             local flip_y = message.flip_y and -1 or 1
 
@@ -505,7 +525,7 @@ function VLIB_DrawGame()
             if grayscale and shader_tint then
                 love.graphics.setShader(shader_tint)
             end
-            love.graphics.draw(texture, quad, dest.x, dest.y, angle, scale_x * flip_x, scale_y * flip_y, center.x, center.y)
+            love.graphics.draw(texture, quad, dst.x, dst.y, angle, scale_x * flip_x, scale_y * flip_y, center.x, center.y)
             if grayscale and shader_tint then
                 love.graphics.setShader()
             end
@@ -633,7 +653,19 @@ function VLIB_StartLevel(thisroomx, thisroomy, posx, posy, gravitycontrol, music
 
     for name, texture in pairs(VLIB_canvases) do
         if type(texture) == "userdata" then
-            local w, h = texture:getDimensions()
+            local w, h
+            if string.sub(name, 1, 12) == "font_custom_" then
+                local chopped_name = string.sub(name, 13)
+                local font_size = VLIB_FONT_SIZES[chopped_name]
+                if font_size ~= nil then
+                    w, h = unpack(font_size)
+                else
+                    w, h = texture:getDimensions()
+                end
+            else
+                w, h = texture:getDimensions()
+            end
+
             VLIB_CHANNEL_IN:push({
                 type = "set_texture_size",
                 name = name,
@@ -766,7 +798,7 @@ function VLIB_GetAction(callback)
 end
 
 function VLIB_Download(callback)
-    VLIB_GetAction(function (action, loc_action)
+    VLIB_GetAction(function(action, loc_action)
         if not action then
             love.window.showMessageBox("Error", "Failed to download VVVVVV", "error")
             return
@@ -871,6 +903,44 @@ function VLIB_DownloadLocalizationFiles(loc_action, callback)
             end)
         end
     end)
+end
+
+function VLIB_LoadFontFile(custom_folder, font_name)
+	local png_contents = read_font_file(custom_folder, font_name, ".png")
+	if png_contents ~= nil then
+		imgdata = love.image.newImageData(
+			love.filesystem.newFileData(png_contents, font_name .. ".png", "file")
+		)
+
+        if imgdata == nil then
+            return
+        end
+
+        return { imgdata:getDimensions() }
+	end
+end
+
+function VLIB_CacheFontSizes()
+    for name, font in pairs(fonts_custom) do
+
+		local levelassets = getlevelassetsfolder()
+        if levelassets == nil then
+            break
+        end
+
+        local fonts_folder = levelassets .. graphicsfolder_rel
+
+        VLIB_FONT_SIZES[name] = VLIB_LoadFontFile(fonts_folder, "font")
+
+        local success, files = listfiles_generic(fonts_folder, ".fontmeta", true)
+        for k, file in pairs(files) do
+            if file.name ~= "font.fontmeta" then
+                local font_name = file.name:sub(1, -10)
+                VLIB_FONT_SIZES[name] = VLIB_LoadFontFile(fonts_folder, font_name)
+                print("Cached font size for " .. font_name .. ": " .. VLIB_FONT_SIZES[name][1] .. "x" .. VLIB_FONT_SIZES[name][2])
+            end
+        end
+    end
 end
 
 function VLIB_ExitPlaytesting()
