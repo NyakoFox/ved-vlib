@@ -921,6 +921,8 @@ function VLIB_LoadFontFile(custom_folder, font_name)
 end
 
 function VLIB_CacheFontSizes()
+    VLIB_FONT_SIZES = {}
+
     for name, font in pairs(fonts_custom) do
 
 		local levelassets = getlevelassetsfolder()

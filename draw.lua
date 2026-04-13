@@ -1,5 +1,3 @@
-VLIB_QUAD_CACHE = {}
-
 function VLIB_Slider(x, y, label, width, current, max, on_change)
     love.graphics.setColor(255, 255, 255)
     font_ui:printf(label, x, y, width, "center")

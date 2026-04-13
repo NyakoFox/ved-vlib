@@ -24,6 +24,8 @@ VLIB_FONT_SIZES = {}
 
 VLIB_GHOSTS = {}
 
+VLIB_QUAD_CACHE = {}
+
 VLIB_FLAGS = {}
 for i = 1, 100 do
     VLIB_FLAGS[i] = false
