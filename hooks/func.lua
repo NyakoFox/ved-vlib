@@ -226,7 +226,7 @@ function VLIB_SetupCanvases()
         local folder = levelassets .. graphicsfolder_rel
 
         local success, files = listfiles_generic(folder, ".png", true)
-        for k,file in pairs(files) do
+        for k, file in pairs(files) do
             if file.name:sub(1, 6) == "region" then
                 local no_ext = file.name:sub(1, -5)
                 VLIB_canvases["graphics/" .. file.name] = VLIB_LoadFile(no_ext, false)
@@ -252,8 +252,8 @@ function VLIB_LoadFile(name, make_white)
         end
 
         local img = love.image.newImageData(
-			love.filesystem.newFileData(contents, name .. ".png", "file")
-		)
+            love.filesystem.newFileData(contents, name .. ".png", "file")
+        )
 
         if img then
             if make_white then
@@ -354,7 +354,7 @@ function VLIB_DrawGame()
         table.insert(messages, message)
     end
 
-    for i = #messages - 1, 1, -1 do
+    for i = #messages, 1, -1 do
         local message = messages[i]
         if message.type == DRAW_SET_COLOR then
             love.graphics.setColor(message.color_r, message.color_g, message.color_b, message.color_a)
