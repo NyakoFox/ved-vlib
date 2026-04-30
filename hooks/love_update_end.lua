@@ -37,7 +37,7 @@ if VLIB_TAKE_SCREENSHOT then
 
     love.graphics.push()
     love.graphics.reset()
-    love.graphics.origin()
+    love.graphics.setDefaultFilter("nearest", "nearest", 1)
     love.graphics.setCanvas(image_data_2x)
     love.graphics.clear()
     love.graphics.setColor(255, 255, 255, 255)

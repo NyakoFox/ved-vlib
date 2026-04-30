@@ -332,6 +332,40 @@ function VLIB_GetGameSpeed()
     return VLIB_SETTINGS.game_speed
 end
 
+function VLIB_DrawGhosts()
+    if not VLIB_SETTINGS.show_ghosts then
+        return
+    end
+
+    -- use VLIB_canvases.ghostTexture
+    if VLIB_GHOST_CANVAS == nil then
+        VLIB_GHOST_CANVAS = love.graphics.newCanvas(320, 240)
+    end
+
+    love.graphics.push()
+    love.graphics.reset()
+    love.graphics.setDefaultFilter("nearest", "nearest", 1)
+    love.graphics.setCanvas(VLIB_GHOST_CANVAS)
+    love.graphics.clear()
+    for i = 1, #VLIB_GHOSTS do
+        if VLIB_GHOSTS[i].rx == roomx and VLIB_GHOSTS[i].ry == roomy then
+            love.graphics.setColor(
+                VLIB_GHOSTS[i].realcol.r,
+                VLIB_GHOSTS[i].realcol.g,
+                VLIB_GHOSTS[i].realcol.b,
+                3 * VLIB_GHOSTS[i].realcol.a / 4
+            )
+            drawentitysprite(VLIB_GHOSTS[i].frame, VLIB_GHOSTS[i].x, VLIB_GHOSTS[i].y, true)
+        end
+    end
+    love.graphics.setCanvas()
+    love.graphics.pop()
+
+    love.graphics.setColor(255, 255, 255, 128)
+    love.graphics.draw(VLIB_GHOST_CANVAS, screenoffset, 0, 0, 2)
+    love.graphics.setColor(255, 255, 255, 255)
+end
+
 function VLIB_DrawGame()
     VLIB_CHANNEL_IN:push({
         type = "delta",

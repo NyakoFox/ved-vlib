@@ -19,6 +19,16 @@ sourceedits =
 	["uis/maineditor/draw"] =
 	{
 		{
+			find = [[displayentities(screenoffset, 0, roomx, roomy, overwritename or not hasroomname)]],
+			replace = [[
+VLIB_DrawGhosts()
+displayentities(screenoffset, 0, roomx, roomy, overwritename or not hasroomname)
+			]],
+			ignore_error = false,
+			luapattern = false,
+			allowmultiple = false
+		},
+		{
 			find = [[if playtesting_available then]],
 			replace = [[
 				if VLIB_Enabled() then
