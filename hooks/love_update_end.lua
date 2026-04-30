@@ -16,11 +16,11 @@ if VLIB_TAKE_SCREENSHOT then
         love.filesystem.createDirectory("screenshots")
     end
 
-    local name = "screenshot_".. os.date("%Y-%m-%d_%H-%M-%S")
+    local name = "screenshot_" .. os.date("%Y-%m-%d_%H-%M-%S")
     local i = 1
     while love.filesystem.exists("screenshots/" .. name .. ".png") do
         i = i + 1
-        name = "screenshot_".. os.date("%Y-%m-%d_%H-%M-%S") .. "_" .. i
+        name = "screenshot_" .. os.date("%Y-%m-%d_%H-%M-%S") .. "_" .. i
     end
 
     local filedata = image_data:encode("png", "screenshots/" .. name .. ".png")
@@ -54,8 +54,9 @@ end
 
 if VLIB_READY and not (s.pausedrawunfocused and not window_active()) then
     VLIB_ACCUMULATOR = VLIB_ACCUMULATOR + dt
-    while VLIB_ACCUMULATOR >= (VLIB_SETTINGS.game_speed / 1000) do
-        VLIB_ACCUMULATOR = VLIB_ACCUMULATOR - (VLIB_SETTINGS.game_speed / 1000)
+    local speed = VLIB_GetGameSpeed()
+    while VLIB_ACCUMULATOR >= (speed / 1000) do
+        VLIB_ACCUMULATOR = VLIB_ACCUMULATOR - (speed / 1000)
 
         VLIB_CHANNEL_IN:push({
             type = "update"

@@ -1,21 +1,29 @@
 
 return function()
-    love.graphics.setColor(128,128,128)
-    love.graphics.rectangle("line", screenoffset-0.5, -0.5, 640+1, 480+1)
-    love.graphics.setColor(255,255,255)
+    love.graphics.setColor(128, 128, 128)
+    love.graphics.rectangle("line", screenoffset - 0.5, -0.5, 640 + 1, 480 + 1)
+    love.graphics.setColor(255, 255, 255)
 
     VLIB_DrawGame()
 
-    love.graphics.setColor(0,0,0,192)
+    love.graphics.setColor(0, 0, 0, 192)
     love.graphics.rectangle("fill", screenoffset, 0, 640, 480)
-    love.graphics.setColor(255,255,255)
+    love.graphics.setColor(255, 255, 255)
 
-    if vedmetadata then
+    local metadata
+
+    if VLIB_IsVed2X() then
+        metadata = level.vedmetadata
+    else
+        metadata = vedmetadata
+    end
+
+    if metadata then
         local longest_label = 0
         local x = 10
         local y = 10
         for i = 1, 100 do
-            local label = "[" .. i - 1 .. "] " .. vedmetadata.flaglabel[i - 1]
+            local label = "[" .. i - 1 .. "] " .. metadata.flaglabel[i - 1]
             local width = font_ui:getWidth(label)
             if width > longest_label then
                 longest_label = width

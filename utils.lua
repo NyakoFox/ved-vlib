@@ -5,7 +5,7 @@ function VLIB_Clamp(x, min, max)
 end
 
 function VLIB_IsArray(tbl)
-    for k,_ in pairs(tbl) do
+    for k, _ in pairs(tbl) do
         if type(k) ~= "number" then
             return false
         end
@@ -17,11 +17,11 @@ function VLIB_Merge(tbl, other)
     if VLIB_IsArray(other) then
         -- If the source table is an array, just append the values
         -- to the end of the destination table.
-        for _,v in ipairs(other) do
+        for _, v in ipairs(other) do
             table.insert(tbl, v)
         end
     else
-        for k,v in pairs(other) do
+        for k, v in pairs(other) do
             -- Otherwise, just copy the value over.
             tbl[k] = v
         end
@@ -44,6 +44,7 @@ function VLIB_GetWantedArtifactName()
 end
 
 function VLIB_GetWantedLibraryName()
+    local name
     if ffi.os == "Windows" then
         name = "VVVVVV-"
         if ffi.arch == "x64" then

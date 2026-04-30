@@ -27,6 +27,10 @@ local BLENDMODE_ADD = 2
 local BLENDMODE_MOD = 4
 local BLENDMODE_MUL = 8
 
+function VLIB_IsVed2X()
+    return theme ~= nil
+end
+
 function VLIB_OnThreadError(errorstr)
     dialog.create("VLIB has errored! Playtesting will be unavailable.\n\n" .. errorstr, DBS.OK)
     cons("VLIB thread error: " .. errorstr)
@@ -75,25 +79,32 @@ function VLIB_StartPlaytesting()
         return true -- Don't continue with vanilla playtesting (or anything under this)
     end
 
-	if playtesting_uistate == PT_UISTATE.ASKING then
-		-- Apparently we pressed Enter twice.
-		atx, aty, flipped = playtesting_find_first_checkpoint()
-		playtesting_endaskwherestart(atx, aty, flipped, true)
-		return true
-	end
+    if playtesting_uistate == PT_UISTATE.ASKING then
+        -- Apparently we pressed Enter twice.
+        atx, aty, flipped = playtesting_find_first_checkpoint()
+        playtesting_endaskwherestart(atx, aty, flipped, true)
+        return true
+    end
 
-	-- Time to start the thread
-	playtesting_engstate = PT_ENGSTATE.IDLE
-	playtesting_uistate = PT_UISTATE.ASKING
+    -- Time to start the thread
+    playtesting_engstate = PT_ENGSTATE.IDLE
+    playtesting_uistate = PT_UISTATE.ASKING
 
-	-- Note: thissavederror will contain level contents if not an error
-	local thissavedsuccess, thissavederror = savelevel(nil, metadata, roomdata, entitydata, levelmetadata, scripts, vedmetadata, extra, false, false)
+    -- Note: thissavederror will contain level contents if not an error
 
-	if not thissavedsuccess then
-		dialog.create(L.SAVENOSUCCESS .. anythingbutnil(thissavederror))
-		playtesting_cancelask()
-	else
-		playtesting_uistate = PT_UISTATE.ASKING
+    local thissavedsuccess, thissavederror
+
+    if VLIB_IsVed2X() then
+        thissavedsuccess, thissavederror = savelevel(nil, level, false, false)
+    else
+        thissavedsuccess, thissavederror = savelevel(nil, metadata, roomdata, entitydata, levelmetadata, scripts, vedmetadata, extra, false, false)
+    end
+
+    if not thissavedsuccess then
+        dialog.create(L.SAVENOSUCCESS .. anythingbutnil(thissavederror))
+        playtesting_cancelask()
+    else
+        playtesting_uistate = PT_UISTATE.ASKING
 
         VLIB_CHANNEL_IN:push(
             {
@@ -101,7 +112,7 @@ function VLIB_StartPlaytesting()
                 level_data = thissavederror
             }
         )
-	end
+    end
     return true -- Don't continue with vanilla playtesting
 end
 
@@ -313,10 +324,18 @@ function VLIB_SetupTexture(texture)
     VLIB_SetBlendMode(blend_mode)
 end
 
+function VLIB_GetGameSpeed()
+    if love.keyboard.isDown("f") then
+        return 8
+    end
+
+    return VLIB_SETTINGS.game_speed
+end
+
 function VLIB_DrawGame()
     VLIB_CHANNEL_IN:push({
         type = "delta",
-        delta = VLIB_SETTINGS.over30 and (VLIB_ACCUMULATOR / (VLIB_SETTINGS.game_speed / 1000)) or 1
+        delta = VLIB_SETTINGS.over30 and (VLIB_ACCUMULATOR / (VLIB_GetGameSpeed() / 1000)) or 1
     })
 
     -- wait until vvvvvv_channel_out_signal has a message saying its fine to render
