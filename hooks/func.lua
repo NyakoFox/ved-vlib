@@ -27,6 +27,11 @@ local BLENDMODE_ADD = 2
 local BLENDMODE_MOD = 4
 local BLENDMODE_MUL = 8
 
+function VLIB_UpdateProgress(progress_now, progress_total)
+    VLIB_PROGRESS_NOW = progress_now or 0
+    VLIB_PROGRESS_TOTAL = progress_total or 0
+end
+
 function VLIB_IsVed2X()
     return theme ~= nil
 end
@@ -647,7 +652,8 @@ function VLIB_LaunchNetworkingThread()
 
         next_key = 0,
         waiting = 0,
-        end_funcs = {}
+        end_funcs = {},
+        progress_funcs = {}
     }
 
     VLIB_HTTPS.in_channel = love.thread.getChannel("vlib_https_in")
@@ -718,12 +724,13 @@ function VLIB_StartLevel(thisroomx, thisroomy, posx, posy, gravitycontrol, music
     to_astate("vlib_playtesting")
 end
 
-function VLIB_fetch(url, callback)
+function VLIB_fetch(url, callback, progress_callback)
     VLIB_HTTPS.waiting = VLIB_HTTPS.waiting + 1
 
     if callback then
         VLIB_HTTPS.next_key = VLIB_HTTPS.next_key + 1
         VLIB_HTTPS.end_funcs[VLIB_HTTPS.next_key] = callback
+        VLIB_HTTPS.progress_funcs[VLIB_HTTPS.next_key] = progress_callback
     end
 
     VLIB_HTTPS.in_channel:push({
@@ -767,7 +774,7 @@ function VLIB_DownloadData(callback)
                                 callback()
                             end
                         )
-                    end)
+                    end, VLIB_UpdateProgress)
                 else
                     dialog.create("Playtesting will not be available for this session.", DBS.OK)
                 end
@@ -834,7 +841,7 @@ function VLIB_GetAction(callback)
             end
         end
         callback(vlib_action, vlib_loc_action)
-    end)
+    end, VLIB_UpdateProgress)
 end
 
 function VLIB_Download(callback)
@@ -940,9 +947,9 @@ function VLIB_DownloadLocalizationFiles(loc_action, callback)
                         callback()
                     end
                 end
-            end)
+            end, VLIB_UpdateProgress)
         end
-    end)
+    end, VLIB_UpdateProgress)
 end
 
 function VLIB_ExitPlaytesting()
@@ -1055,6 +1062,6 @@ function VLIB_DownloadLibrary(action, callback)
                     end
                 end
             )
-        end)
-    end)
+        end, VLIB_UpdateProgress)
+    end, VLIB_UpdateProgress)
 end

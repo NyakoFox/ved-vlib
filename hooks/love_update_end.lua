@@ -109,10 +109,16 @@ if VLIB_HTTPS.waiting > 0 then
     while VLIB_HTTPS.out_channel:getCount() > 0 do
         local msg = VLIB_HTTPS.out_channel:pop()
         if msg then
-            VLIB_HTTPS.waiting = VLIB_HTTPS.waiting - 1
-            if VLIB_HTTPS.end_funcs[msg.key] then
+            if (VLIB_HTTPS.end_funcs[msg.key] ~= nil) and (msg.response ~= nil) then
+                VLIB_HTTPS.waiting = VLIB_HTTPS.waiting - 1
+
                 VLIB_HTTPS.end_funcs[msg.key](msg.response)
                 VLIB_HTTPS.end_funcs[msg.key] = nil
+                VLIB_HTTPS.progress_funcs[msg.key] = nil
+            end
+
+            if (VLIB_HTTPS.progress_funcs[msg.key] ~= nil) and (msg.progress ~= nil) then
+                VLIB_HTTPS.progress_funcs[msg.key](msg.progress.dlnow, msg.progress.dltotal)
             end
         end
     end
